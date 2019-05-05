@@ -1,0 +1,56 @@
+@import '../styles/mixins';
+@import '../styles/variables';
+
+$gap: $spacer / 2;
+
+.item {
+  width: 33.33%;
+  padding: 0 $gap;
+  margin-bottom: $gap * 2;
+
+  @include screen-md {
+    padding-left: $gap / 2;
+    padding-right: $gap / 2;
+    margin-bottom: $gap;
+  }
+
+  @include screen-sm {
+    width: 50%;
+  }
+}
+
+.link {
+  display: block;
+  position: relative;
+}
+
+.description {
+  position: absolute;
+  padding: .5rem .75rem;
+  color: #fff;
+  bottom: 0;
+  text-shadow: 1px 1px 2px #000;
+
+  @include screen-md {
+    padding: .5rem;
+  }
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 400;
+  margin-bottom: 0;
+
+  @include screen-md {
+    font-size: .8rem;
+  }
+}
+
+.info {
+  font-size: 80%;
+  margin-bottom: 0;
+
+  @include screen-md {
+    font-size: 75%;
+  }
+}

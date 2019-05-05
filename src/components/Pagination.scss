@@ -1,0 +1,21 @@
+@import '../styles/variables';
+
+.pagination {
+  margin-top: $spacer * 2.5;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  a {
+    flex: 0 1 136px;
+    margin-bottom: $spacer / 2;
+
+    @media screen and (max-width: 309px) {
+      flex-grow: 1;
+    }
+  }
+
+  .button--next {
+    margin-left: auto;
+  }
+}

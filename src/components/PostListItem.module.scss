@@ -1,0 +1,53 @@
+@import '../styles/variables';
+@import '../styles/mixins';
+
+.item {
+  display: flex;
+  margin-bottom: $spacer * 1.5;
+
+  @include screen-sm {
+    flex-direction: column;
+  }
+}
+
+.image {
+  flex: 1 0 250px;
+  margin-right: $spacer;
+
+  @include screen-md {
+    flex-basis: 235px;
+  }
+
+  @include screen-sm {
+    flex: initial;
+    margin-right: 0;
+    margin-bottom: $spacer / 2;
+  }
+}
+
+.title {
+  font-size: 1rem;
+  margin-bottom: .25rem;
+}
+
+.info {
+  color: $grey;
+  margin-bottom: .25rem;
+
+  span:not(:last-child) {
+    margin-right: .25rem;
+  }
+}
+
+.excerpt {
+  margin-bottom: .25rem;
+}
+
+.tags {
+  color: $grey;
+  margin: 0;
+
+  span:not(:last-child) {
+    margin-right: .3rem;
+  }
+}

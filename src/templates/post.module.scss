@@ -1,0 +1,30 @@
+@import '../styles/variables';
+
+.info {
+  color: $grey;
+
+  span:not(:last-child) {
+    margin-right: $spacer / 4;
+  }
+}
+
+.tags {
+  display: flex;
+  align-items: center;
+  color: $grey;
+
+  svg {
+    fill: $grey;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: .5rem;
+  }
+
+  span:not(:last-child) {
+    margin-right: .5rem;
+  }
+}
+
+.comments {
+  margin-top: $spacer * 4;
+}

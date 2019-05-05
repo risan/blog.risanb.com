@@ -1,0 +1,12 @@
+@import '../styles/mixins';
+@import '../styles/variables';
+
+.wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -($spacer / 2);
+
+  @include screen-md {
+    margin: 0 -($spacer / 4);
+  }
+}

@@ -1,0 +1,22 @@
+@import './mixins.scss';
+@import './variables.scss';
+@import './reboot.scss';
+@import './type.scss';
+@import './layout.scss';
+@import './buttons.scss';
+
+.iframe-wrapper {
+  position: relative;
+  height: 0;
+  padding-bottom: 56.25%;
+  margin-bottom: $spacer;
+  background: $grey-lighten;
+
+  iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
