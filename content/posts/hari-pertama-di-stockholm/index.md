@@ -1,6 +1,6 @@
 ---
 title: Hari Pertama di Stockholm
-date: 2019-05-15 11:51:00
+date: 2019-05-04 11:51:00
 type: photo
 country: sweden
 city: stockholm
