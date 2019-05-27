@@ -44,6 +44,6 @@ Siang itu saya menyusuri jalan setapak di sisi Selatan Djurgården. Dari Waldema
 
 ![M/S Gabriella yang melayani rute pelayaran antara Stockholm dan Helsinki di Finlandia.](./DSC_8072.jpg)
 
-![Terminal Feri Nacka strand yang berada tepat di sebrang Blockhusudden.](./DSC_7910.jpg)
+![Terminal Feri Nacka strand yang berada tepat di sebrang Blockhusudden.](./DSC_8076.jpg)
 
-![Perahu bermotor melintasi Teluk Saltsjön.](./DSC_7910.jpg)
+![Perahu bermotor melintasi Teluk Saltsjön.](./DSC_8103.jpg)
