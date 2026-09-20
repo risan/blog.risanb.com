@@ -1,0 +1,16 @@
+# URLs from https://blog.risanb.com/sitemap.xml while the Gatsby site was
+# live, captured 2026-09-21 before the Astro rewrite. scripts/check-site.mjs
+# asserts each is either built by the new site or covered by a redirect rule.
+/
+/photos/
+/posts/angin-dingin-dari-siberia/
+/posts/bersepeda-kembali/
+/posts/enam-hal-yang-mengagumkan-dari-swedia/
+/posts/gamla-stan-siang-itu/
+/posts/hari-pertama-di-stockholm/
+/posts/jalan-jalan-singkat-di-ostermalm/
+/posts/keliling-sodermalm/
+/posts/mendadak-oyakodon/
+/posts/salju-di-penghujung-februari/
+/posts/sisi-selatan-djurgarden/
+/posts/stasiun-stasiun-tunnelbana/

@@ -1,0 +1,24 @@
+# Redirect map for the blog.risanb.com Gatsby -> Astro rewrite.
+#
+# Read by Cloudflare Pages (and Netlify) at deploy time, and parsed by
+# scripts/check-site.mjs which fails the build if a rule would shadow a page the
+# site actually serves.
+#
+# 301 is stated explicitly: both hosts default to 302 when the status is left
+# off, and a 302 does not carry ranking.
+#
+# Source: the 13 URLs in blog.risanb.com/sitemap.xml while Gatsby was live
+# (2026-09-21 snapshot in scripts/legacy-urls.txt). Two shapes, both handled:
+#
+#   /posts/<slug>/  -> /<slug>/              (11 rules, one splat)
+#   /photos/        -> /categories/photos/   (the old gallery is now a category)
+#
+# The 142 posts served from risanb.com/blog/<slug>/ keep the same slug here, so
+# risanb.com's own redirect file points them straight at /<slug>/ and needs no
+# second hop.
+
+# --- Gatsby-era post URLs ----------------------------------------------------
+/posts/*  /:splat  301
+
+# --- Gatsby-era photo gallery, now a category --------------------------------
+/photos/  /categories/photos/  301

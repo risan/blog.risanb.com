@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # astro check + vue-tsc. Catches a bad content-collection field, a
+      # mistyped prop, or a Vue template error before it can reach a build.
+      # Kept as its own step for accurate failure attribution; `npm run build`
+      # would otherwise run the same checks a second time.
+      - name: Type-check Astro and Vue
+        run: npm run check
+
+      - name: Build
+        run: npm run build:only
+
+      # Pages exist, internal links resolve, the redirect map is well-formed and
+      # does not shadow a real page, and all 250 pre-split URLs are either
+      # served or redirected. See scripts/check-site.mjs.
+      - name: Check pages, links and redirect map
+        run: npm run check:site
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site
+          path: dist
+          retention-days: 7

@@ -1,0 +1,62 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+
+// Mirrors the code site's list layout: grouped by year, newest first.
+const byYear = new Map<string, typeof posts>();
+for (const post of posts) {
+  const year = String(post.data.date.getUTCFullYear());
+  const bucket = byYear.get(year);
+  if (bucket) bucket.push(post);
+  else byYear.set(year, [post]);
+}
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+
+const href = (id: string) => `/${id.replace(/\/index$/, '')}/`;
+
+const years = [...byYear.keys()];
+const span =
+  years.length > 1 ? `${years[years.length - 1]}–${years[0]}` : (years[0] ?? '');
+---
+
+<BaseLayout
+  title="Writing & Life Journey | Risan Bagja"
+  description="My name is Risan Bagja Pradana and I code for a living. But this part of the website is where I write anything but programming stuff."
+>
+  <div class="home-intro">
+    <p class="eyebrow">Risan Bagja Pradana</p>
+    <h1>Writing &amp; Life Journey</h1>
+    <p>
+      I code for a living, but this is where I write anything <em>but</em> programming. Notes on
+      daily life, travelling, and whatever else crossed my mind.
+    </p>
+    <p>
+      {posts.length} posts, {span}. The technical writing lives over at
+      <a href="https://risanb.com">risanb.com</a>.
+    </p>
+  </div>
+
+  {
+    [...byYear.entries()].map(([year, entries]) => (
+      <section class="year-group">
+        <h2>{year}</h2>
+        <ul class="entry-list">
+          {entries.map((post) => (
+            <li>
+              <a href={href(post.id)}>
+                <span class="title">{post.data.title}</span>
+                <span class="meta">{fmt(post.data.date)}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</BaseLayout>
