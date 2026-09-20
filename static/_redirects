@@ -1,24 +1,34 @@
 # Redirect map for the blog.risanb.com Gatsby -> Astro rewrite.
 #
-# Read by Cloudflare Pages (and Netlify) at deploy time, and parsed by
-# scripts/check-site.mjs which fails the build if a rule would shadow a page the
-# site actually serves.
+# Read by Cloudflare Workers static assets at deploy time (dist/_redirects), and
+# parsed by scripts/check-site.mjs which fails the build if a rule would shadow a
+# page the site actually serves.
 #
-# 301 is stated explicitly: both hosts default to 302 when the status is left
+# 301 is stated explicitly: the platform defaults to 302 when the status is left
 # off, and a 302 does not carry ranking.
+#
+# ORDER: static rules first, then the single splat rule last, per Cloudflare's
+# requirement that static redirects precede dynamic ones. The rules are disjoint
+# so either order resolves identically today, but precedence is applied top-down
+# and a future rule could quietly become unreachable.
+#
+# These redirects are applied by the static-assets layer. They are SKIPPED for
+# any request a Worker script handles, which is why wrangler.jsonc deliberately
+# defines no `main` script and no `run_worker_first`.
 #
 # Source: the 13 URLs in blog.risanb.com/sitemap.xml while Gatsby was live
 # (2026-09-21 snapshot in scripts/legacy-urls.txt). Two shapes, both handled:
 #
-#   /posts/<slug>/  -> /<slug>/              (11 rules, one splat)
 #   /photos/        -> /categories/photos/   (the old gallery is now a category)
+#   /posts/<slug>/  -> /<slug>/              (11 URLs, one splat rule)
 #
 # The 142 posts served from risanb.com/blog/<slug>/ keep the same slug here, so
 # risanb.com's own redirect file points them straight at /<slug>/ and needs no
 # second hop.
 
-# --- Gatsby-era post URLs ----------------------------------------------------
-/posts/*  /:splat  301
-
 # --- Gatsby-era photo gallery, now a category --------------------------------
 /photos/  /categories/photos/  301
+
+# --- Gatsby-era post URLs ----------------------------------------------------
+# Dynamic (splat) rule -- keep last, see ORDER note above.
+/posts/*  /:splat  301
