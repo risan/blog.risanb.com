@@ -3,5 +3,8 @@ node_modules/
 dist/
 .astro/
 
+# Cloudflare Workers local build cache (created by `wrangler`)
+.wrangler/
+
 # Editor
 .idea
