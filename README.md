@@ -23,7 +23,13 @@ live on here — the old URLs are handled by `static/_redirects`.
 
 ## Requirements
 
-Node 20.3+ (see `.tool-versions`). npm.
+Node 20.3+ (see `.node-version`). npm.
+
+`.node-version` rather than `.tool-versions` on purpose: Workers Builds detects a
+`.tool-versions` file and tries to install its contents, but the build image only
+supports `NODE_VERSION`, `.nvmrc` and `.node-version`. A `.tool-versions` file
+fails the build before it starts with `Failed: error occurred while installing
+tools or dependencies`.
 
 ## Commands
 
