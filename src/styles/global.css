@@ -456,6 +456,41 @@ article.journal-article {
   margin: 0 auto 24px;
 }
 
+.journal-content code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--sand-2);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.12em 0.38em;
+  color: var(--ink);
+}
+
+.journal-content hr {
+  border: 0;
+  height: 1px;
+  background: var(--rule);
+  margin: 48px 0;
+}
+
+.journal-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 32px 0;
+  font-size: 0.9375rem;
+}
+.journal-content th,
+.journal-content td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+.journal-content th {
+  font-family: var(--font-disp);
+  font-weight: 600;
+  color: var(--ink);
+}
+
 /* Figures & photos */
 .journal-content figure {
   margin: 44px 0;

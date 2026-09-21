@@ -1,6 +1,5 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { Image } from 'astro:assets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { toPlainText } from '../../lib/plain-text';
 
@@ -54,25 +53,17 @@ const excerpt = (post: Post) => {
 
     <ul class="entries" style="margin-top: 48px;">
       {
-        entries.map((post) => {
-          const cover = post.data.images[0];
-          return (
-            <li>
-              <a href={href(post.id)} class={cover ? '' : 'no-thumb'}>
-                {cover && (
-                  <span class="thumb">
-                    <Image src={cover} width={280} height={210} alt="" />
-                  </span>
-                )}
-                <span>
-                  <h4>{post.data.title}</h4>
-                  <p>{excerpt(post)}</p>
-                  <span class="when">{fmt(post.data.date)}</span>
-                </span>
-              </a>
-            </li>
-          );
-        })
+        entries.map((post) => (
+          <li>
+            <a href={href(post.id)} class="no-thumb">
+              <span>
+                <h4>{post.data.title}</h4>
+                <p>{excerpt(post)}</p>
+                <span class="when">{fmt(post.data.date)}</span>
+              </span>
+            </a>
+          </li>
+        ))
       }
     </ul>
   </div>
