@@ -1,6 +1,8 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { toPlainText } from '../../lib/plain-text';
 
 type Post = CollectionEntry<'blog'>;
 
@@ -28,33 +30,61 @@ export async function getStaticPaths() {
 const { category, entries } = Astro.props;
 
 const fmt = (d: Date) =>
-  d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+const href = (id: string) => `/${id.replace(/\/index$/, '')}/`;
+
+const categoryLabels: Record<string, string> = {
+  travel: 'Perjalanan',
+  writing: 'Tulisan',
+  journal: 'Catatan',
+  photos: 'Foto',
+};
+const displayTitle = categoryLabels[category] ?? category;
+
+const excerpt = (post: Post) => {
+  if (post.data.description) return post.data.description;
+  if (!post.body) return '';
+  const text = toPlainText(post.body);
+  return text.length > 130 ? `${text.slice(0, 130).trim()}…` : text;
+};
 ---
 
 <BaseLayout
-  title={`${category} | Risan Bagja`}
-  description={`Posts filed under ${category}.`}
+  title={`${displayTitle} — Risan Bagja`}
+  description={`Kumpulan catatan dalam kategori ${displayTitle}.`}
 >
-  <div class="page-head">
-    <p class="eyebrow">
-      <a href="/categories/">← All categories</a>
-    </p>
-    <h1>{category}</h1>
-    <p class="lede">{entries.length} {entries.length === 1 ? 'post' : 'posts'}.</p>
-  </div>
+  <div class="shell">
+    <div class="page-head">
+      <p style="margin-bottom: 8px;">
+        <a href="/categories/">← Semua kategori</a>
+      </p>
+      <h1>{displayTitle}</h1>
+      <p class="lede">{entries.length} catatan dalam kategori ini.</p>
+    </div>
 
-  <section class="section-block">
-    <ul class="entry-list">
+    <ul class="entries" style="margin-top: 48px;">
       {
-        entries.map((post) => (
-          <li>
-            <a href={`/${post.id.replace(/\/index$/, '')}/`}>
-              <span class="title">{post.data.title}</span>
-              <span class="meta">{fmt(post.data.date)}</span>
-            </a>
-          </li>
-        ))
+        entries.map((post) => {
+          const cover = post.data.images[0];
+          return (
+            <li>
+              <a href={href(post.id)} class={cover ? '' : 'no-thumb'}>
+                {cover && (
+                  <span class="thumb">
+                    <Image src={cover} width={280} height={210} alt="" />
+                  </span>
+                )}
+                <span>
+                  <h4>{post.data.title}</h4>
+                  <p>{excerpt(post)}</p>
+                  <span class="when">{fmt(post.data.date)}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })
       }
     </ul>
-  </section>
+  </div>
 </BaseLayout>

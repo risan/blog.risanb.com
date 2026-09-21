@@ -11,24 +11,24 @@ for (const post of posts) {
 const sorted = [...terms.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 ---
 
-<BaseLayout title="Tags | Risan Bagja" description="Browse posts by tag.">
-  <div class="page-head">
-    <h1>Tags</h1>
-  </div>
+<BaseLayout title="Topik — Risan Bagja" description="Jelajahi catatan berdasarkan topik.">
+  <div class="shell">
+    <div class="page-head">
+      <h1>Topik Catatan</h1>
+      <p class="lede">Jelajahi {sorted.length} topik yang tersebar di seluruh catatan.</p>
+    </div>
 
-  <section class="section-block">
-    <h2>{sorted.length} tags</h2>
-    <ul class="entry-list">
+    <div class="tags-pills" style="margin-top: 48px; justify-content: center; gap: 12px;">
       {
         sorted.map(([name, count]) => (
-          <li>
-            <a href={`/tags/${name}/`}>
-              <span class="title">{name}</span>
-              <span class="meta">{count} {count === 1 ? 'post' : 'posts'}</span>
-            </a>
-          </li>
+          <a
+            href={`/tags/${name}/`}
+            style="font-size: 0.9375rem; padding: 6px 16px; border-radius: 999px;"
+          >
+            #{name} <span style="opacity: 0.65; margin-left: 4px;">({count})</span>
+          </a>
         ))
       }
-    </ul>
-  </section>
+    </div>
+  </div>
 </BaseLayout>

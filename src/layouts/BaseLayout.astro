@@ -19,8 +19,8 @@ interface Props {
 
 const {
   title,
-  description,
-  lang = 'en',
+  description = 'Catatan perjalanan, renungan harian, ulasan buku, dan cerita-cerita kecil dari Risan Bagja.',
+  lang = 'id',
   ogImage,
   ogType = 'website',
   published,
@@ -29,8 +29,12 @@ const {
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const socialImage = ogImage ? new URL(ogImage.src, Astro.site) : undefined;
 const nav = [
-  { href: '/categories/photos/', label: 'Photos' },
-  { href: '/tags/', label: 'Topics' },
+  { href: '/categories/travel/', label: 'Perjalanan' },
+  { href: '/categories/writing/', label: 'Tulisan' },
+  { href: '/categories/journal/', label: 'Catatan' },
+  { href: '/categories/photos/', label: 'Foto' },
+  { href: '/tags/', label: 'Topik' },
+  { href: '/tentang/', label: 'Tentang' },
 ] as const;
 const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
 ---
@@ -59,48 +63,78 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <link
       rel="alternate"
       type="application/rss+xml"
-      title="Risan Bagja"
+      title="Risan Bagja — Catatan dari Jalanan"
       href={new URL('/rss.xml', Astro.site)}
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-    <!-- Theme is fixed light for now; declared so the UA doesn't guess. -->
     <meta name="color-scheme" content="light" />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">Lewati ke konten</a>
 
-    <header class="site">
-      <div class="wrap bar">
-        <a class="brand" href="/">Risan Bagja <em>/ blog</em></a>
-        <nav class="top" aria-label="Primary">
-          {
-            nav.map((item) => (
-              <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
-                {item.label}
-              </a>
-            ))
-          }
-          <a href="/rss.xml">RSS</a>
-          <button class="kbd" type="button" data-search-open aria-label="Search (Command K)">
-            ⌘K
-          </button>
+    <header class="masthead">
+      <div class="shell">
+        <a class="wordmark" href="/">Risan Bagja</a>
+        <span class="tagline">catatan dari jalanan</span>
+        <nav class="journal" aria-label="Navigasi Utama">
+          <ul>
+            {
+              nav.map((item) => (
+                <li>
+                  <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+            <li>
+              <button
+                class="journal-search-btn"
+                type="button"
+                data-search-open
+                aria-label="Cari catatan (Command K)"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span>Cari</span>
+                <kbd>⌘K</kbd>
+              </button>
+            </li>
+          </ul>
         </nav>
       </div>
     </header>
 
-    <main id="main" class="wrap">
+    <main id="main">
       <slot />
     </main>
 
-    <footer class="site">
-      <div class="wrap bar">
-        <span>© Risan Bagja {new Date().getFullYear()}</span>
-        <nav aria-label="Elsewhere">
+    <footer class="ocean">
+      <div class="inner">
+        <a class="wordmark" href="/">Risan Bagja</a>
+        <div class="tagline">catatan dari jalanan</div>
+        <nav aria-label="Tautan Terkait">
+          <a href="https://risanb.com">Code &amp; Tech (risanb.com)</a>
           <a href="https://github.com/risan">GitHub</a>
           <a href="https://twitter.com/risanbagja">Twitter</a>
           <a href="/rss.xml">RSS</a>
         </nav>
+        <div class="fine">
+          <span>© Risan Bagja {new Date().getFullYear()}. Ditulis dari perjalanan dan keseharian.</span>
+        </div>
       </div>
     </footer>
 

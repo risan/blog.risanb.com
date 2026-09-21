@@ -1,12 +1,31 @@
 ---
 import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { toPlainText } from '../lib/plain-text';
 
 const posts = (await getCollection('blog')).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 
-// Mirrors the code site's list layout: grouped by year, newest first.
+// Pick the primary featured post that has an image
+const featuredPost = posts.find((p) => p.data.featured && p.data.images.length > 0) ?? posts[0];
+
+// Recent posts (excluding the featured one to avoid immediate repetition)
+const remaining = posts.filter((p) => p.id !== featuredPost.id);
+const recentPosts = remaining.slice(0, 6);
+
+// Photo & travel strip (3 visual posts with photos)
+const photoPosts = posts
+  .filter(
+    (p) =>
+      p.id !== featuredPost.id &&
+      p.data.images.length > 0 &&
+      (p.data.categories.includes('photos') || p.data.categories.includes('travel')),
+  )
+  .slice(0, 3);
+
+// Group all posts by year for the full archive
 const byYear = new Map<string, typeof posts>();
 for (const post of posts) {
   const year = String(post.data.date.getUTCFullYear());
@@ -16,47 +35,154 @@ for (const post of posts) {
 }
 
 const fmt = (d: Date) =>
-  d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+  d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+const fmtShort = (d: Date) =>
+  d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 
 const href = (id: string) => `/${id.replace(/\/index$/, '')}/`;
 
-const years = [...byYear.keys()];
-const span =
-  years.length > 1 ? `${years[years.length - 1]}–${years[0]}` : (years[0] ?? '');
+const excerpt = (post: (typeof posts)[0]) => {
+  if (post.data.description) return post.data.description;
+  if (!post.body) return '';
+  const text = toPlainText(post.body);
+  return text.length > 130 ? `${text.slice(0, 130).trim()}…` : text;
+};
+
+const categoryLabel = (cats: string[]) => {
+  if (!cats || cats.length === 0) return 'Catatan';
+  const c = cats[0].toLowerCase();
+  if (c === 'travel') return 'Perjalanan';
+  if (c === 'writing') return 'Tulisan';
+  if (c === 'journal') return 'Catatan';
+  if (c === 'photos') return 'Foto';
+  return cats[0];
+};
 ---
 
 <BaseLayout
-  title="Writing & Life Journey | Risan Bagja"
-  description="My name is Risan Bagja Pradana and I code for a living. But this part of the website is where I write anything but programming stuff."
+  title="Risan Bagja — Catatan dari Jalanan"
+  description="Catatan perjalanan, renungan harian, ulasan buku, dan cerita-cerita kecil dari Risan Bagja."
 >
-  <div class="home-intro">
-    <p class="eyebrow">Risan Bagja Pradana</p>
-    <h1>Writing &amp; Life Journey</h1>
-    <p>
-      I code for a living, but this is where I write anything <em>but</em> programming. Notes on
-      daily life, travelling, and whatever else crossed my mind.
-    </p>
-    <p>
-      {posts.length} posts, {span}. The technical writing lives over at
-      <a href="https://risanb.com">risanb.com</a>.
-    </p>
-  </div>
+  <div class="shell">
+    {/* Featured Hero */}
+    {
+      featuredPost && (
+        <a class="featured" href={href(featuredPost.id)}>
+          {featuredPost.data.images[0] && (
+            <div class="ph">
+              <Image
+                src={featuredPost.data.images[0]}
+                width={1080}
+                height={480}
+                alt={featuredPost.data.title}
+                loading="eager"
+              />
+            </div>
+          )}
+          <div class="body">
+            <span class="cat-badge">{categoryLabel(featuredPost.data.categories)}</span>
+            <h2>{featuredPost.data.title}</h2>
+            <p>{excerpt(featuredPost)}</p>
+            <span class="when">{fmt(featuredPost.data.date)}</span>
+          </div>
+        </a>
+      )
+    }
 
-  {
-    [...byYear.entries()].map(([year, entries]) => (
-      <section class="year-group">
-        <h2>{year}</h2>
-        <ul class="entry-list">
-          {entries.map((post) => (
+    {/* Section: Catatan Terbaru */}
+    <div class="sechead">
+      <h3>Catatan Terbaru</h3>
+      <a href="#arsip">Semua catatan ({posts.length}) ↓</a>
+    </div>
+
+    <ul class="entries">
+      {
+        recentPosts.map((post) => {
+          const cover = post.data.images[0];
+          return (
             <li>
-              <a href={href(post.id)}>
-                <span class="title">{post.data.title}</span>
-                <span class="meta">{fmt(post.data.date)}</span>
+              <a href={href(post.id)} class={cover ? '' : 'no-thumb'}>
+                {cover && (
+                  <span class="thumb">
+                    <Image src={cover} width={280} height={210} alt="" />
+                  </span>
+                )}
+                <span>
+                  <h4>{post.data.title}</h4>
+                  <p>{excerpt(post)}</p>
+                  <span class="when">
+                    {fmt(post.data.date)} · {categoryLabel(post.data.categories)}
+                  </span>
+                </span>
               </a>
             </li>
-          ))}
-        </ul>
-      </section>
-    ))
-  }
+          );
+        })
+      }
+    </ul>
+
+    {/* Section: Foto & Perjalanan */}
+    {
+      photoPosts.length > 0 && (
+        <>
+          <div class="sechead">
+            <h3>Foto &amp; Perjalanan</h3>
+            <a href="/categories/photos/">Galeri foto →</a>
+          </div>
+          <div class="strip">
+            {photoPosts.map((post) => (
+              <a href={href(post.id)} title={post.data.title}>
+                <Image src={post.data.images[0]} width={360} height={360} alt={post.data.title} />
+                <div class="strip-body">{post.data.title}</div>
+              </a>
+            ))}
+          </div>
+        </>
+      )
+    }
+
+    {/* Author Teaser Card */}
+    <div class="teaser">
+      <img src="/img/risan.jpg" alt="Risan Bagja" width="90" height="90" />
+      <div>
+        <h3>Halo, aku Risan.</h3>
+        <p>
+          Aku menulis tentang tempat-tempat yang aku datangi, buku yang aku baca, dan hal-hal kecil
+          yang aku temui di jalan. Untuk tulisan teknis seputar pemrograman, kamu bisa mengunjungi <a
+            href="https://risanb.com">risanb.com</a
+          >.
+        </p>
+        <a href="https://risanb.com">Kunjungi tulisan rekayasa &amp; kode →</a>
+      </div>
+    </div>
+
+    {/* Section: Arsip Lengkap per Tahun */}
+    <div id="arsip" class="sechead" style="margin-top: 84px;">
+      <h3>Arsip Lengkap ({posts.length} Catatan)</h3>
+      <a href="#main">Kembali ke atas ↑</a>
+    </div>
+
+    {
+      [...byYear.entries()].map(([year, entries]) => (
+        <section class="year-group">
+          <h2>{year}</h2>
+          <ul class="entries">
+            {entries.map((post) => (
+              <li>
+                <a href={href(post.id)} class="no-thumb" style="padding: 14px 0;">
+                  <span>
+                    <h4 style="font-size: 1.1875rem;">{post.data.title}</h4>
+                    <span class="when" style="margin-top: 4px;">
+                      {fmtShort(post.data.date)} · {categoryLabel(post.data.categories)}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
 </BaseLayout>
