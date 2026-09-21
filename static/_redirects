@@ -29,6 +29,9 @@
 # --- Gatsby-era photo gallery, now a category --------------------------------
 /photos/  /categories/photos/  301
 
+# --- Dropped posts ------------------------------------------------------------
+/farewell/  /  301
+
 # --- Gatsby-era post URLs ----------------------------------------------------
 # Dynamic (splat) rule -- keep last, see ORDER note above.
 /posts/*  /:splat  301

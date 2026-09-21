@@ -63,7 +63,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <link
       rel="alternate"
       type="application/rss+xml"
-      title="Risan Bagja — Catatan dari Jalanan"
+      title="Risan Bagja — Catatan Perjalanan & Keseharian"
       href={new URL('/rss.xml', Astro.site)}
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -76,7 +76,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <header class="masthead">
       <div class="shell">
         <a class="wordmark" href="/">Risan Bagja</a>
-        <span class="tagline">catatan dari jalanan</span>
+        <span class="tagline">catatan perjalanan &amp; keseharian</span>
         <nav class="journal" aria-label="Navigasi Utama">
           <ul>
             {
@@ -125,7 +125,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <footer class="ocean">
       <div class="inner">
         <a class="wordmark" href="/">Risan Bagja</a>
-        <div class="tagline">catatan dari jalanan</div>
+        <div class="tagline">catatan perjalanan &amp; keseharian</div>
         <nav aria-label="Tautan Terkait">
           <a href="https://risanb.com">Code &amp; Tech (risanb.com)</a>
           <a href="https://github.com/risan">GitHub</a>
@@ -133,7 +133,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
           <a href="/rss.xml">RSS</a>
         </nav>
         <div class="fine">
-          <span>© Risan Bagja {new Date().getFullYear()}. Ditulis dari perjalanan dan keseharian.</span>
+          <span>© Risan Bagja {new Date().getFullYear()}. Jurnal, perjalanan, dan cerita keseharian.</span>
         </div>
       </div>
     </footer>
