@@ -4,6 +4,7 @@ title: Belantara
 date: 2021-04-18T22:11:00+07:00
 categories: [writing]
 tags: [puisi]
+images: [./cover.jpg]
 ---
 Suara-suara nyaring\
 Derap-derap langkah yang ritmis\
@@ -26,3 +27,5 @@ Serasah daun terbakar\
 Abunya terbawa sungai\
 Apa yang kita cari?\
 Cinta dan pembalasan
+
+Foto cover dari [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Trees_in_misty_forest.jpg) oleh Aldshakya (CC BY-SA 4.0).

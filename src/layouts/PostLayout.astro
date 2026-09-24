@@ -60,168 +60,95 @@ const primaryCatLabel = categoryLabel(categories);
 
   {
     cover ? (
-      <>
-        <div class="hero">
-          <Image src={cover} width={1400} height={700} alt={title} loading="eager" />
-          <div class="caption">
-            <a href={`/categories/${primaryCat}/`} class="cat-badge">
-              {primaryCatLabel}
-            </a>
-            <h1>{title}</h1>
-          </div>
-        </div>
-
-        <div class="sheet">
-          <article class="journal-article">
-            <div class="meta-row">
-              <span class="by">
-                Oleh <a href="/tentang/">Risan Bagja</a>
-              </span>
-              <span class="sep">·</span>
-              <time datetime={date.toISOString()}>{fmt(date)}</time>
-              {updated && (
-                <>
-                  <span class="sep">·</span>
-                  <span>Diperbarui {fmt(updated)}</span>
-                </>
-              )}
-              <span class="sep">·</span>
-              <span>{minutes} menit baca</span>
-            </div>
-
-            <div class="journal-content">
-              <slot />
-            </div>
-
-            {/* Handwritten signature signoff */}
-            <div class="signoff">
-              <span class="sig">Risan Bagja</span>
-              <div class="line" />
-            </div>
-
-            {/* Author card */}
-            <div class="author-card">
-              <img src="/img/risan.jpg" alt="Risan Bagja" width="80" height="80" />
-              <div>
-                <h3>Risan Bagja</h3>
-                <p>
-                  Menulis catatan perjalanan, renungan harian, ulasan buku, dan cerita-cerita kecil
-                  dari Bandung. Tulisan teknis seputar pemrograman ada di{' '}
-                  <a href="https://risanb.com">risanb.com</a>.
-                </p>
-              </div>
-            </div>
-
-            {/* Topic tags pills */}
-            {tags.length > 0 && (
-              <div class="tags-pills">
-                <span class="lbl">Topik:</span>
-                {tags.map((t) => (
-                  <a href={`/tags/${t}/`}>#{t}</a>
-                ))}
-              </div>
-            )}
-
-            {/* Next / Prev navigation */}
-            {(prev || next) && (
-              <nav class="nextup" aria-label="Catatan Lainnya">
-                {next && (
-                  <div class="item">
-                    <span class="lbl">Catatan Selanjutnya</span>
-                    <a href={`/${next.id.replace(/\/index$/, '')}/`}>{next.data.title}</a>
-                  </div>
-                )}
-                {prev && (
-                  <div class="item">
-                    <span class="lbl">Catatan Sebelumnya</span>
-                    <a href={`/${prev.id.replace(/\/index$/, '')}/`}>{prev.data.title}</a>
-                  </div>
-                )}
-              </nav>
-            )}
-          </article>
-        </div>
-      </>
-    ) : (
-      <div class="sheet" style="margin-top: 0; padding-top: 0;">
-        <header class="simple-post-head">
+      <div class="hero">
+        <Image src={cover} width={1400} height={700} alt={title} loading="eager" />
+        <div class="caption">
           <a href={`/categories/${primaryCat}/`} class="cat-badge">
             {primaryCatLabel}
           </a>
           <h1>{title}</h1>
-        </header>
-
-        <article class="journal-article" style="margin-top: 32px;">
-          <div class="meta-row">
-            <span class="by">
-              Oleh <a href="/tentang/">Risan Bagja</a>
-            </span>
-            <span class="sep">·</span>
-            <time datetime={date.toISOString()}>{fmt(date)}</time>
-            {updated && (
-              <>
-                <span class="sep">·</span>
-                <span>Diperbarui {fmt(updated)}</span>
-              </>
-            )}
-            <span class="sep">·</span>
-            <span>{minutes} menit baca</span>
-          </div>
-
-          <div class="journal-content">
-            <slot />
-          </div>
-
-          {/* Handwritten signature signoff */}
-          <div class="signoff">
-            <span class="sig">Risan Bagja</span>
-            <div class="line" />
-          </div>
-
-          {/* Author card */}
-          <div class="author-card">
-            <img src="/img/risan.jpg" alt="Risan Bagja" width="80" height="80" />
-            <div>
-              <h3>Risan Bagja</h3>
-              <p>
-                Menulis catatan perjalanan, renungan harian, ulasan buku, dan cerita-cerita kecil
-                dari Bandung. Tulisan teknis seputar pemrograman ada di{' '}
-                <a href="https://risanb.com">risanb.com</a>.
-              </p>
-            </div>
-          </div>
-
-          {/* Topic tags pills */}
-          {tags.length > 0 && (
-            <div class="tags-pills">
-              <span class="lbl">Topik:</span>
-              {tags.map((t) => (
-                <a href={`/tags/${t}/`}>#{t}</a>
-              ))}
-            </div>
-          )}
-
-          {/* Next / Prev navigation */}
-          {(prev || next) && (
-            <nav class="nextup" aria-label="Catatan Lainnya">
-              {next && (
-                <div class="item">
-                  <span class="lbl">Catatan Selanjutnya</span>
-                  <a href={`/${next.id.replace(/\/index$/, '')}/`}>{next.data.title}</a>
-                </div>
-              )}
-              {prev && (
-                <div class="item">
-                  <span class="lbl">Catatan Sebelumnya</span>
-                  <a href={`/${prev.id.replace(/\/index$/, '')}/`}>{prev.data.title}</a>
-                </div>
-              )}
-            </nav>
-          )}
-        </article>
+        </div>
       </div>
+    ) : (
+      <header class="simple-post-head" style="max-width: 820px; margin: 40px auto 0; padding: 0 32px;">
+        <a href={`/categories/${primaryCat}/`} class="cat-badge">
+          {primaryCatLabel}
+        </a>
+        <h1>{title}</h1>
+      </header>
     )
   }
+
+  <div class="sheet" style={cover ? '' : 'margin-top: 0; padding-top: 0;'}>
+    <article class="journal-article" style={cover ? '' : 'margin-top: 32px;'}>
+      <div class="meta-row">
+        <span class="by">
+          Oleh <a href="/tentang/">Risan Bagja</a>
+        </span>
+        <span class="sep">·</span>
+        <time datetime={date.toISOString()}>{fmt(date)}</time>
+        {updated && (
+          <>
+            <span class="sep">·</span>
+            <span>Diperbarui {fmt(updated)}</span>
+          </>
+        )}
+        <span class="sep">·</span>
+        <span>{minutes} menit baca</span>
+      </div>
+
+      <div class="journal-content">
+        <slot />
+      </div>
+
+      {/* Handwritten signature signoff */}
+      <div class="signoff">
+        <span class="sig">Risan Bagja</span>
+        <div class="line" />
+      </div>
+
+      {/* Author card */}
+      <div class="author-card">
+        <img src="/img/risan.jpg" alt="Risan Bagja" width="80" height="80" />
+        <div>
+          <h3>Risan Bagja</h3>
+          <p>
+            Menulis tentang hal-hal yang saya temui, buku yang saya baca, dan catatan perjalanan.
+          </p>
+        </div>
+      </div>
+
+      {/* Topic tags pills */}
+      {tags.length > 0 && (
+        <div class="tags-pills">
+          <span class="lbl">Tags:</span>
+          {tags.map((t) => (
+            <a href={`/tags/${t}/`}>#{t}</a>
+          ))}
+        </div>
+      )}
+
+      {/* Next / Prev navigation */}
+      {(prev || next) && (
+        <nav class="nextprev" aria-label="Catatan Lainnya">
+          {prev ? (
+            <div class="item prev">
+              <span class="label">← Sebelumnya</span>
+              <a href={`/${prev.id.replace(/\/index$/, '')}/`}>{prev.data.title}</a>
+            </div>
+          ) : (
+            <div class="item placeholder" />
+          )}
+          {next && (
+            <div class="item next">
+              <span class="label">Selanjutnya →</span>
+              <a href={`/${next.id.replace(/\/index$/, '')}/`}>{next.data.title}</a>
+            </div>
+          )}
+        </nav>
+      )}
+    </article>
+  </div>
 
   {/* Client-side progress indicator */}
   <script>

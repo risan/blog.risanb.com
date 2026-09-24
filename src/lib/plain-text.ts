@@ -34,6 +34,8 @@ export function toPlainText(markdown: string): string {
       .replace(/\|/g, ' ')
       // Emphasis, strikethrough and inline-code delimiters.
       .replace(/[*_~`]/g, ' ')
+      // Escaped characters and CommonMark hard line-breaks (\ at line ends).
+      .replace(/\\+/g, ' ')
       // Thematic breaks.
       .replace(/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/gm, ' ')
       .replace(/\s+/g, ' ')

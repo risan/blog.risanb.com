@@ -2,7 +2,9 @@
 import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import TagIcon from '../components/TagIcon.astro';
 import { toPlainText } from '../lib/plain-text';
+import risanPhoto from '../assets/risan.webp';
 
 const posts = (await getCollection('blog')).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
@@ -25,20 +27,15 @@ const photoPosts = posts
   )
   .slice(0, 3);
 
-// Group all posts by year for the full archive
-const byYear = new Map<string, typeof posts>();
+// Tag frequencies
+const terms = new Map<string, number>();
 for (const post of posts) {
-  const year = String(post.data.date.getUTCFullYear());
-  const bucket = byYear.get(year);
-  if (bucket) bucket.push(post);
-  else byYear.set(year, [post]);
+  for (const t of post.data.tags) terms.set(t, (terms.get(t) ?? 0) + 1);
 }
+const sortedTags = [...terms.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
 const fmt = (d: Date) =>
   d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-
-const fmtShort = (d: Date) =>
-  d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 
 const href = (id: string) => `/${id.replace(/\/index$/, '')}/`;
 
@@ -61,10 +58,47 @@ const categoryLabel = (cats: string[]) => {
 ---
 
 <BaseLayout
-  title="Risan Bagja — Catatan Perjalanan & Keseharian"
-  description="Catatan perjalanan, renungan, ulasan buku, dan tulisan keseharian dari Risan Bagja."
+  title="Risan Bagja"
+  description="Jurnal pribadi, catatan perjalanan, dan cerita-cerita yang patut diingat dari Risan Bagja."
 >
   <div class="shell">
+    {/* Bold Intro Header & Magazine 2-Column Spread with Photo */}
+    <section class="home-intro">
+      <h1>Cerita, <span class="accent-word">perjalanan</span>, dan hal-hal yang singgah di ingatan</h1>
+
+      <div class="home-intro-spread">
+        <p>
+          Halo, saya Risan. Sehari-hari saya menulis kode dan merancang perangkat lunak.
+          Ketertarikan itu bermula sejak bangku SMP, saat saya iseng membaca buku pemrograman lawas
+          dan membuat editor teks sederhana. Sejak saat itu, rasa ingin tahu untuk membuat sesuatu selalu ada.
+        </p>
+        <p>
+          Namun di sela-sela rutinitas di depan layar, saya selalu menemukan ruang untuk jeda:
+          menempuh rute baru dengan sepeda, duduk membaca buku fiksi, mengamati sudut-sudut kota yang
+          belum pernah disinggahi, atau sekadar memperhatikan hal-hal kecil yang kerap terlewatkan saat kita tergesa-gesa.
+        </p>
+
+        <figure class="home-intro-figure">
+          <Image
+            src={risanPhoto}
+            alt="Risan Bagja melihat ke luar jendela kereta"
+            class="home-intro-photo"
+            loading="eager"
+            fetchpriority="high"
+            widths={[380, 520, 760, 1176]}
+            sizes="(max-width: 768px) 100vw, 540px"
+          />
+          <figcaption class="home-intro-caption">Melihat ke luar jendela kereta — cara sederhana untuk melambat.</figcaption>
+        </figure>
+
+        <p>
+          Situs ini adalah jurnal pribadi tempat saya mengarsipkan cerita perjalanan, ulasan buku,
+          dan catatan harian yang sempat dituliskan. Bukan panduan wisata, melainkan sekadar rekaman jujur
+          dari waktu yang pernah dilalui. Semoga ada cerita di sini yang terasa dekat.
+        </p>
+      </div>
+    </section>
+
     {/* Featured Hero */}
     {
       featuredPost && (
@@ -91,9 +125,9 @@ const categoryLabel = (cats: string[]) => {
     }
 
     {/* Section: Catatan Terbaru */}
-    <div class="sechead">
+    <div class="sechead" style="margin-top: 64px;">
       <h3>Catatan Terbaru</h3>
-      <a href="#arsip">Semua catatan ({posts.length}) ↓</a>
+      <a href="/arsip/">Semua catatan ({posts.length}) →</a>
     </div>
 
     <ul class="entries">
@@ -126,7 +160,7 @@ const categoryLabel = (cats: string[]) => {
     {
       photoPosts.length > 0 && (
         <>
-          <div class="sechead">
+          <div class="sechead" style="margin-top: 64px;">
             <h3>Foto &amp; Perjalanan</h3>
             <a href="/categories/photos/">Galeri foto →</a>
           </div>
@@ -142,46 +176,106 @@ const categoryLabel = (cats: string[]) => {
       )
     }
 
-    {/* Author Teaser Card */}
-    <div class="teaser">
-      <img src="/img/risan.jpg" alt="Risan Bagja" width="90" height="90" />
-      <div>
-        <h3>Halo, saya Risan.</h3>
-        <p>
-          Saya menulis tentang tempat-tempat yang saya kunjungi, buku yang saya baca, dan hal-hal
-          kecil yang saya temui di perjalanan. Untuk tulisan teknis seputar pemrograman, silakan
-          kunjungi <a href="https://risanb.com">risanb.com</a>.
-        </p>
-        <a href="https://risanb.com">Kunjungi tulisan rekayasa &amp; kode →</a>
+    {/* Section: Tag Clouds */}
+    <section class="section-block" style="margin-top: 72px;">
+      <div class="sechead">
+        <h3>Tags</h3>
+        <a href="/tags/">Semua tag →</a>
       </div>
-    </div>
-
-    {/* Section: Arsip Lengkap per Tahun */}
-    <div id="arsip" class="sechead" style="margin-top: 84px;">
-      <h3>Arsip Lengkap ({posts.length} Catatan)</h3>
-      <a href="#main">Kembali ke atas ↑</a>
-    </div>
-
-    {
-      [...byYear.entries()].map(([year, entries]) => (
-        <section class="year-group">
-          <h2>{year}</h2>
-          <ul class="entries">
-            {entries.map((post) => (
-              <li>
-                <a href={href(post.id)} class="no-thumb" style="padding: 14px 0;">
-                  <span>
-                    <h4 style="font-size: 1.1875rem;">{post.data.title}</h4>
-                    <span class="when" style="margin-top: 4px;">
-                      {fmtShort(post.data.date)} · {categoryLabel(post.data.categories)}
-                    </span>
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))
-    }
+      <div class="tag-cloud">
+        {
+          sortedTags.map(([name, count]) => (
+            <a href={`/tags/${name}/`} class="tag-pill tag-pill--lg">
+              <TagIcon name={name} />
+              <span class="tag-name">#{name}</span>
+              <span class="tag-count">{count}</span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
   </div>
 </BaseLayout>
+
+<style>
+  .home-intro {
+    max-width: 100%;
+    padding: 32px 0 0;
+  }
+
+  .home-intro h1 {
+    font-size: clamp(2.35rem, 5.2vw, 3.6rem);
+    line-height: 1.08;
+    margin: 0;
+    font-family: var(--font-disp);
+    letter-spacing: -0.02em;
+    font-variation-settings: 'SOFT' 30, 'WONK' 1;
+    color: var(--ink);
+  }
+
+  .home-intro h1 .accent-word {
+    color: var(--terra);
+  }
+
+  .home-intro-spread {
+    margin-top: 28px;
+  }
+
+  @media (min-width: 768px) {
+    .home-intro-spread {
+      columns: 2;
+      column-gap: 52px;
+      margin-top: 36px;
+    }
+  }
+
+  .home-intro-spread p {
+    margin: 20px 0 0;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+    color: var(--ink);
+  }
+
+  .home-intro-spread p:first-of-type {
+    margin-top: 0;
+  }
+
+  .home-intro-spread p:first-of-type::first-letter {
+    initial-letter: 2;
+    -webkit-initial-letter: 2;
+    float: left;
+    font-family: var(--font-disp);
+    font-size: 3.4rem;
+    line-height: 0.85;
+    font-weight: 500;
+    color: var(--terra);
+    margin: 0.04em 0.14em 0 0;
+  }
+
+  .home-intro-figure {
+    break-inside: avoid;
+    margin: 24px 0;
+  }
+
+  .home-intro-photo {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: center 30%;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--sand-2);
+  }
+
+  .home-intro-caption {
+    font-family: var(--font-disp);
+    font-style: italic;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 10px;
+    padding: 0 8px;
+  }
+</style>

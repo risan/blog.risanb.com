@@ -19,7 +19,7 @@ interface Props {
 
 const {
   title,
-  description = 'Catatan perjalanan, renungan harian, ulasan buku, dan cerita-cerita kecil dari Risan Bagja.',
+  description = 'Jurnal dan catatan pribadi Risan Bagja.',
   lang = 'id',
   ogImage,
   ogType = 'website',
@@ -33,7 +33,7 @@ const nav = [
   { href: '/categories/writing/', label: 'Tulisan' },
   { href: '/categories/journal/', label: 'Catatan' },
   { href: '/categories/photos/', label: 'Foto' },
-  { href: '/tags/', label: 'Topik' },
+  { href: '/arsip/', label: 'Arsip' },
   { href: '/tentang/', label: 'Tentang' },
 ] as const;
 const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
@@ -63,7 +63,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <link
       rel="alternate"
       type="application/rss+xml"
-      title="Risan Bagja — Catatan Perjalanan & Keseharian"
+      title="Risan Bagja"
       href={new URL('/rss.xml', Astro.site)}
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -76,7 +76,6 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <header class="masthead">
       <div class="shell">
         <a class="wordmark" href="/">Risan Bagja</a>
-        <span class="tagline">catatan perjalanan &amp; keseharian</span>
         <nav class="journal" aria-label="Navigasi Utama">
           <ul>
             {
@@ -125,15 +124,13 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <footer class="ocean">
       <div class="inner">
         <a class="wordmark" href="/">Risan Bagja</a>
-        <div class="tagline">catatan perjalanan &amp; keseharian</div>
         <nav aria-label="Tautan Terkait">
-          <a href="https://risanb.com">Code &amp; Tech (risanb.com)</a>
-          <a href="https://github.com/risan">GitHub</a>
+          <a href="https://risanb.com">Code</a>
           <a href="https://twitter.com/risanbagja">Twitter</a>
           <a href="/rss.xml">RSS</a>
         </nav>
         <div class="fine">
-          <span>© Risan Bagja {new Date().getFullYear()}. Jurnal, perjalanan, dan cerita keseharian.</span>
+          <span>© Risan Bagja {new Date().getFullYear()}</span>
         </div>
       </div>
     </footer>

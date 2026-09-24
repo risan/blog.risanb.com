@@ -614,38 +614,132 @@ article.journal-article {
   background: rgba(28, 76, 87, 0.14);
   color: var(--ink);
 }
+/* Tag Cloud & Tag Pills */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.tag-pill {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--sand-2);
+  border: 1px solid var(--rule);
+  padding: 6px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.tag-pill:hover {
+  color: var(--terra) !important;
+  border-color: var(--terra);
+  background: var(--sand);
+}
+
+.tag-pill--lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.tag-pill--lg .tag-name {
+  color: var(--ink);
+  transition: color 0.15s ease;
+}
+
+.tag-pill:hover .tag-name {
+  color: var(--terra);
+}
+
+.tag-pill--lg .tag-count {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+/* Tag SVG icons */
+.tech-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  filter: grayscale(1);
+  opacity: 0.55;
+  transition: filter 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+}
+
+.tech-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.entry-list a:hover .tech-icon,
+.tag-pill:hover .tech-icon,
+.tech-icon:hover {
+  filter: none !important;
+  opacity: 1 !important;
+  transform: scale(1.08);
+}
 
 /* Next / Prev navigation */
-.nextup {
-  margin-top: 52px;
-  padding: 28px;
-  background: var(--sand-2);
-  border-radius: 20px;
+.nextprev {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
   display: grid;
-  gap: 20px;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
 }
-.nextup .item {
+.nextprev .item {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
-.nextup .lbl {
-  font-size: 0.6875rem;
+.nextprev .item.next {
+  text-align: right;
+}
+.nextprev .label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.625rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
 }
-.nextup a {
+.nextprev a {
   font-family: var(--font-disp);
-  font-size: 1.25rem;
-  line-height: 1.25;
+  font-size: 1.1875rem;
+  line-height: 1.35;
   color: var(--ink);
   text-decoration: none;
   font-variation-settings: 'SOFT' 20, 'WONK' 1;
 }
-.nextup a:hover {
+.nextprev a:hover {
   color: var(--terra);
 }
 
+@media (max-width: 640px) {
+  .nextprev {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .nextprev .item.next {
+    text-align: left;
+  }
+}
 /* -------------------------------------------------------- homepage --- */
 
 /* Featured Hero Card */
@@ -922,6 +1016,65 @@ article.journal-article {
   padding-bottom: 10px;
   border-bottom: 1px solid var(--rule);
   font-variation-settings: 'SOFT' 30, 'WONK' 1;
+}
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.entry-list li {
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry-list a {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: baseline;
+  padding: 16px 0;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.entry-list .title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-disp);
+  font-size: 1.1875rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  transition: color 0.15s ease;
+}
+
+.entry-list a:hover .title {
+  color: var(--terra);
+}
+
+.entry-list .meta {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.entry-list--compact a {
+  padding: 12px 0;
+}
+
+.entry-list--compact .title {
+  font-size: 1.0625rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .entry-list a {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 /* ------------------------------------------------------------- footer --- */

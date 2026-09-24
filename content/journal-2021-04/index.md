@@ -3,6 +3,7 @@ title: "Journal: 2021 April"
 date: 2021-04-08T22:03:00+07:00
 lastmod: 2021-04-10T21:54:00+07:00
 categories: [journal]
+images: [./20210410_153210.jpg]
 ---
 ### 100 Hari Bersepeda
 

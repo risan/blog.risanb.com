@@ -2,6 +2,7 @@
 title: "Journal: 2021 February"
 date: 2021-02-20T22:12:00+07:00
 categories: [journal]
+images: [./cover.jpg]
 ---
 ### Hari Soto Nasional
 
@@ -28,3 +29,5 @@ Di sebuah pom bensin, Wendy secara diam-diam mendapati Ben membeli telepon gengg
 Ben dan Wendy makan malam dengan menu panekuk di sebuah restoran. Wendy bertanya kepada Ben tentang apa yang ia inginkan di masa depan. Jawaban pertama dari Ben adalah: Ruth. Wendy mulai berkaca-kaca dan izin untuk pergi ke kamar mandi. Wendy menyelinap keluar. Ia melihat Ben untuk terakhir kali dari balik kaca restoran. Ia lalu memacu mobilnya dari tempat tersebut. Tak lama Nelson—utusan Hellen—datang ke restoran tersebut untuk menghabisi Ben.
 
 Dalam perjalanan Wendy terisak-isak. Wendy yang selalu digambarkan sebagai sosok yang dingin, dalam episode ini begitu rapuh saat harus kehilangan adik laki-lakinya. Di sisi lain, momen tragis di akhir episode ini membuat hubungan Wendy dan suaminya membaik. Begitu pun hubungan Ruth dan sepupunya Wyatt, kembali dekat karena berusaha menyelamatkan Ben.
+
+Foto cover dari [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Soto_Lamongan.jpg) oleh Wiwik P (CC BY-SA 4.0).

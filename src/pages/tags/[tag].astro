@@ -41,14 +41,14 @@ const excerpt = (post: Post) => {
 };
 ---
 
-<BaseLayout title={`#${tag} — Risan Bagja`} description={`Catatan dengan topik #${tag}.`}>
+<BaseLayout title={`#${tag} — Risan Bagja`} description={`Catatan dengan tag #${tag}.`}>
   <div class="shell">
     <div class="page-head">
       <p style="margin-bottom: 8px;">
-        <a href="/tags/">← Semua topik</a>
+        <a href="/tags/">← Semua tag</a>
       </p>
       <h1>#{tag}</h1>
-      <p class="lede">{entries.length} catatan dengan topik ini.</p>
+      <p class="lede">{entries.length} catatan dengan tag ini.</p>
     </div>
 
     <ul class="entries" style="margin-top: 48px;">

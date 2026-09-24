@@ -1,0 +1,53 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+
+const byYear = new Map<string, typeof posts>();
+for (const post of posts) {
+  const year = String(post.data.date.getUTCFullYear());
+  const bucket = byYear.get(year);
+  if (bucket) bucket.push(post);
+  else byYear.set(year, [post]);
+}
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+const href = (id: string) => `/${id.replace(/\/index$/, '')}/`;
+---
+
+<BaseLayout
+  title="Arsip — Risan Bagja"
+  description={`Semua catatan, jurnal, dan cerita perjalanan yang pernah ditulis. ${posts.length} catatan diterbitkan.`}
+>
+  <div class="shell" style="max-width: 860px;">
+    <div class="page-head">
+      <h1>Arsip</h1>
+      <p class="lede">
+        Semua catatan, jurnal, dan cerita perjalanan yang pernah ditulis. {posts.length} catatan diterbitkan.
+      </p>
+    </div>
+
+    {
+      [...byYear.entries()].map(([year, entries]) => (
+        <section class="year-group">
+          <h2>{year}</h2>
+          <ul class="entry-list entry-list--compact">
+            {entries.map((post) => (
+              <li>
+                <a href={href(post.id)}>
+                  <span class="title">{post.data.title}</span>
+                  <span class="meta">{fmt(post.data.date)}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+</BaseLayout>

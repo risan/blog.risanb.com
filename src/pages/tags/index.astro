@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import TagIcon from '../../components/TagIcon.astro';
 
 const posts = await getCollection('blog');
 
@@ -11,21 +12,20 @@ for (const post of posts) {
 const sorted = [...terms.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 ---
 
-<BaseLayout title="Topik — Risan Bagja" description="Jelajahi catatan berdasarkan topik.">
-  <div class="shell">
+<BaseLayout title="Tags — Risan Bagja" description="Jelajahi catatan berdasarkan tag.">
+  <div class="shell" style="max-width: 860px;">
     <div class="page-head">
-      <h1>Topik Catatan</h1>
-      <p class="lede">Jelajahi {sorted.length} topik yang tersebar di seluruh catatan.</p>
+      <h1>Tags</h1>
+      <p class="lede">Jelajahi {sorted.length} tag yang tersebar di seluruh catatan.</p>
     </div>
 
-    <div class="tags-pills" style="margin-top: 48px; justify-content: center; gap: 12px;">
+    <div class="tag-cloud" style="margin-top: 48px; justify-content: center; gap: 12px;">
       {
         sorted.map(([name, count]) => (
-          <a
-            href={`/tags/${name}/`}
-            style="font-size: 0.9375rem; padding: 6px 16px; border-radius: 999px;"
-          >
-            #{name} <span style="opacity: 0.65; margin-left: 4px;">({count})</span>
+          <a href={`/tags/${name}/`} class="tag-pill tag-pill--lg">
+            <TagIcon name={name} />
+            <span class="tag-name">#{name}</span>
+            <span class="tag-count">{count}</span>
           </a>
         ))
       }
