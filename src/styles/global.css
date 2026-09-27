@@ -33,7 +33,7 @@
   --font-hand: 'Caveat', cursive;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', monospace;
 
-  --measure: 72ch;
+  --measure: 58ch;
 }
 
 :root {
@@ -54,7 +54,8 @@
   --ink-muted: var(--muted);
   --accent: var(--terra);
   --accent-soft: var(--terra-soft);
-  --measure: 72ch;
+  --measure: 58ch;
+
 
   --font-disp: 'Fraunces Variable', 'Fraunces', Georgia, serif;
   --font-body: 'Lora Variable', 'Lora', Georgia, serif;
@@ -323,10 +324,9 @@ nav.journal a:hover {
 }
 
  .simple-post-head {
-   max-width: var(--measure);
+   max-width: 740px;
    margin: 48px auto 0;
-   padding: 0 clamp(20px, 4.5vw, 40px);
-   box-sizing: content-box;
+   padding: 0 32px;
    text-align: center;
  }
 .simple-post-head h1 {
@@ -342,11 +342,9 @@ nav.journal a:hover {
 }
 
  article.journal-article {
-   width: 100%;
-   max-width: var(--measure);
+   max-width: 740px;
    margin: 0 auto;
-   padding: 0 clamp(20px, 4.5vw, 40px);
-   box-sizing: content-box;
+   padding: 0 32px;
  }
 
 .meta-row {
