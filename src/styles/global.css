@@ -33,7 +33,7 @@
   --font-hand: 'Caveat', cursive;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SFMono-Regular', monospace;
 
-  --measure: 70ch;
+  --measure: 72ch;
 }
 
 :root {
@@ -54,6 +54,7 @@
   --ink-muted: var(--muted);
   --accent: var(--terra);
   --accent-soft: var(--terra-soft);
+  --measure: 72ch;
 
   --font-disp: 'Fraunces Variable', 'Fraunces', Georgia, serif;
   --font-body: 'Lora Variable', 'Lora', Georgia, serif;
@@ -108,17 +109,19 @@ a:hover {
   border-radius: 2px;
 }
 
-.shell {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
-
-.wrap {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
+ .shell {
+   max-width: 1180px;
+   margin: 0 auto;
+   padding-left: clamp(20px, 4.5vw, 40px);
+   padding-right: clamp(20px, 4.5vw, 40px);
+ }
+ 
+ .wrap {
+   max-width: 1180px;
+   margin: 0 auto;
+   padding-left: clamp(20px, 4.5vw, 40px);
+   padding-right: clamp(20px, 4.5vw, 40px);
+ }
 
 .skip-link {
   position: absolute;
@@ -319,12 +322,13 @@ nav.journal a:hover {
   padding: 52px 0 0;
 }
 
-.simple-post-head {
-  max-width: 780px;
-  margin: 48px auto 0;
-  padding: 0 32px;
-  text-align: center;
-}
+ .simple-post-head {
+   max-width: var(--measure);
+   margin: 48px auto 0;
+   padding: 0 clamp(20px, 4.5vw, 40px);
+   box-sizing: content-box;
+   text-align: center;
+ }
 .simple-post-head h1 {
   font-family: var(--font-disp);
   font-weight: 600;
@@ -337,11 +341,13 @@ nav.journal a:hover {
   text-wrap: balance;
 }
 
-article.journal-article {
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
+ article.journal-article {
+   width: 100%;
+   max-width: var(--measure);
+   margin: 0 auto;
+   padding: 0 clamp(20px, 4.5vw, 40px);
+   box-sizing: content-box;
+ }
 
 .meta-row {
   display: flex;
@@ -1205,9 +1211,10 @@ footer.ocean .fine a:hover {
     margin-top: -24px;
     padding-top: 36px;
   }
-  article.journal-article {
-    padding: 0 18px;
-  }
+   article.journal-article {
+     box-sizing: border-box;
+     padding: 0 18px;
+   }
   .hero {
     height: min(50vh, 400px);
   }
