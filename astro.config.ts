@@ -48,7 +48,17 @@ export default defineConfig({
     // Configured on the unified processor explicitly (Astro 7+ default processor is Sätteri).
     processor: unified({
       remarkPlugins: [remarkHugoShortcodes],
-      rehypePlugins: [rehypeFigure],
+      rehypePlugins: [
+        [
+          rehypeFigure,
+          {
+            minConsecutive: 3,
+            defaultLayout: 'justified',
+            defaultLoop: true,
+            defaultThumbnails: true,
+          },
+        ],
+      ],
     }),
   },
 
