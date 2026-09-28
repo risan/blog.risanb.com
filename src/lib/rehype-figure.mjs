@@ -188,59 +188,101 @@ export function rehypeFigure(options = {}) {
     }
 
     // Apply Bento layout classes and limits to a gallery container
-    function applyBentoLayout(galleryItems, limitConfig) {
+    // Apply dynamic editorial gallery layout classes and limits to a gallery container
+    function applyGalleryLayout(galleryItems, limitConfig, galleryNode) {
       const count = galleryItems.length;
       const isUnlimited = limitConfig === 'all' || limitConfig === 0 || limitConfig === '0';
       const effectiveLimit = isUnlimited ? count : (Number(limitConfig) > 0 ? Number(limitConfig) : defaultLimit);
 
+      // Deterministic variant based on first item src/alt
+      let hash = 0;
+      const firstSrc =
+        galleryItems[0]?.properties?.src ||
+        galleryItems[0]?.children?.[0]?.properties?.src ||
+        galleryItems[0]?.children?.[0]?.children?.[0]?.properties?.src ||
+        '';
+      for (let i = 0; i < firstSrc.length; i++) {
+        hash = ((hash << 5) - hash) + firstSrc.charCodeAt(i);
+        hash |= 0;
+      }
+      const variant = Math.abs(hash) % 3;
+
+      if (galleryNode?.properties) {
+        galleryNode.properties.dataVariant = String(variant);
+        ensureClass(galleryNode, `gallery-variant-${variant}`);
+      }
+
       if (count === 2) {
-        galleryItems[0] && ensureClass(galleryItems[0], 'bento-half');
-        galleryItems[1] && ensureClass(galleryItems[1], 'bento-half');
+        galleryItems[0] && ensureClass(galleryItems[0], 'col-half');
+        galleryItems[1] && ensureClass(galleryItems[1], 'col-half');
         return;
       }
 
       if (count === 3) {
-        galleryItems.forEach((it) => ensureClass(it, 'bento-third'));
-        return;
-      }
-
-      if (count === 4) {
-        galleryItems.forEach((it) => ensureClass(it, 'bento-square'));
-        return;
-      }
-
-      if (count === 5) {
-        ensureClass(galleryItems[0], 'bento-large');
-        for (let i = 1; i < 5; i++) {
-          galleryItems[i] && ensureClass(galleryItems[i], 'bento-square');
+        if (variant === 1) {
+          // Feature left + 2 stacked right
+          ensureClass(galleryItems[0], 'col-hero-left');
+          ensureClass(galleryItems[1], 'col-stack-right');
+          ensureClass(galleryItems[2], 'col-stack-right');
+        } else {
+          // 3 equal columns
+          galleryItems.forEach((it) => ensureClass(it, 'col-third'));
         }
         return;
       }
 
-      if (count === 6) {
-        galleryItems.forEach((it) => ensureClass(it, 'bento-third'));
+      if (count === 4) {
+        // 2x2 grid
+        galleryItems.forEach((it) => ensureClass(it, 'col-half'));
         return;
       }
 
-      // For 7+ items: Bento pattern
-      // 8 items fill exactly 12 cells (3 rows x 4 cols on desktop):
-      // 0: 2x2 (4 cells), 1: 1x2 (2 cells), 2..7: 1x1 (6 cells) = 12 cells!
-      const bentoPattern = [
-        'bento-large',   // 0: 2x2
-        'bento-tall',    // 1: 1x2
-        'bento-square',  // 2: 1x1
-        'bento-square',  // 3: 1x1
-        'bento-square',  // 4: 1x1
-        'bento-square',  // 5: 1x1
-        'bento-square',  // 6: 1x1
-        'bento-square',  // 7: 1x1 (holds +N badge if hidden items)
-      ];
+      if (count === 5) {
+        // 2 on top (50% each), 3 on bottom (33.3% each)
+        ensureClass(galleryItems[0], 'col-half');
+        ensureClass(galleryItems[1], 'col-half');
+        ensureClass(galleryItems[2], 'col-third');
+        ensureClass(galleryItems[3], 'col-third');
+        ensureClass(galleryItems[4], 'col-third');
+        return;
+      }
 
+      if (count === 6) {
+        // 2 rows of 3
+        galleryItems.forEach((it) => ensureClass(it, 'col-third'));
+        return;
+      }
+
+      // For 7+ items (e.g. 8 items with limit)
+      // 3 distinct flush editorial compositions that fill every row completely:
+      // Variant 0 ("Editorial 2-3-3"): Row 1 (two 50% photos), Row 2 (three 33% photos), Row 3 (three 33% photos)
+      // Variant 1 ("Editorial 3-2-3"): Row 1 (three 33% photos), Row 2 (two 50% photos), Row 3 (three 33% photos)
+      // Variant 2 ("Editorial 3-3-2"): Row 1 (three 33% photos), Row 2 (three 33% photos), Row 3 (two 50% photos)
       const visibleCount = (!isUnlimited && count > effectiveLimit) ? effectiveLimit : count;
+
+      const patterns = visibleCount === 7
+        ? [
+            // 7 items: 2 + 2 + 3 = 7
+            ['col-half', 'col-half', 'col-half', 'col-half', 'col-third', 'col-third', 'col-third'],
+            // 7 items: 3 + 2 + 2 = 7
+            ['col-third', 'col-third', 'col-third', 'col-half', 'col-half', 'col-half', 'col-half'],
+            // 7 items: 2 + 3 + 2 = 7
+            ['col-half', 'col-half', 'col-third', 'col-third', 'col-third', 'col-half', 'col-half'],
+          ]
+        : [
+            // Variant 0: 2-3-3
+            ['col-half', 'col-half', 'col-third', 'col-third', 'col-third', 'col-third', 'col-third', 'col-third'],
+            // Variant 1: 3-2-3
+            ['col-third', 'col-third', 'col-third', 'col-half', 'col-half', 'col-third', 'col-third', 'col-third'],
+            // Variant 2: 3-3-2
+            ['col-third', 'col-third', 'col-third', 'col-third', 'col-third', 'col-third', 'col-half', 'col-half'],
+          ];
+
+      const currentPattern = patterns[variant % patterns.length];
 
       galleryItems.forEach((it, idx) => {
         if (idx < visibleCount) {
-          const patternClass = bentoPattern[idx % bentoPattern.length];
+          const patternClass = currentPattern[idx % currentPattern.length];
           ensureClass(it, patternClass);
 
           // If this is the last visible item and there are more items, add +N badge!
@@ -320,8 +362,7 @@ export function rehypeFigure(options = {}) {
 
       const rawLimit = gallery.properties?.dataLimit || gallery.properties?.limit || defaultLimit;
       const figures = newGalleryChildren.filter((c) => c.type === 'element' && c.tagName === 'figure');
-      applyBentoLayout(figures, rawLimit);
-
+      applyGalleryLayout(figures, rawLimit, gallery);
       gallery.children = newGalleryChildren;
       gallery.properties.dataCount = String(figures.length);
     }
@@ -368,9 +409,7 @@ export function rehypeFigure(options = {}) {
             }
           }
 
-          applyBentoLayout(galleryItems, defaultLimit);
-
-          newChildren.push({
+          const galleryNode = {
             type: 'element',
             tagName: 'div',
             properties: {
@@ -382,7 +421,10 @@ export function rehypeFigure(options = {}) {
               dataLimit: String(defaultLimit),
             },
             children: galleryItems,
-          });
+          };
+
+          applyGalleryLayout(galleryItems, defaultLimit, galleryNode);
+          newChildren.push(galleryNode);
         } else {
           // Less than threshold: keep as standalone figures
           for (let i = 0; i < currentRun.length; i++) {

@@ -98,12 +98,13 @@ export function remarkHugoShortcodes() {
             const layoutMatch = rawAttrs.match(/layout=["'“”‘’]?([a-z0-9_-]+)["'“”‘’]?/i);
             const loopMatch = rawAttrs.match(/loop=["'“”‘’]?(true|false)["'“”‘’]?/i);
             const thumbMatch = rawAttrs.match(/thumbnails=["'“”‘’]?(true|false)["'“”‘’]?/i);
+            const limitMatch = rawAttrs.match(/limit=["'“”‘’]?([a-z0-9_-]+)["'“”‘’]?/i);
             const captionMatch = rawAttrs.match(/caption=["'“”‘’]([^"'“”‘’]+)["'“”‘’]/i);
             const layout = layoutMatch ? layoutMatch[1] : 'justified';
             const loop = loopMatch ? loopMatch[1] : 'true';
             const thumbnails = thumbMatch ? thumbMatch[1] : 'true';
+            const limit = limitMatch ? limitMatch[1] : '';
             const caption = captionMatch ? captionMatch[1] : '';
-
             // Find closing tag
             let closeIdx = -1;
             for (let j = i + 1; j < parent.children.length; j++) {
@@ -131,6 +132,7 @@ export function remarkHugoShortcodes() {
                     dataLayout: layout,
                     dataLoop: loop,
                     dataThumbnails: thumbnails,
+                    ...(limit ? { dataLimit: limit } : {}),
                     ...(caption ? { dataGalleryCaption: caption } : {}),
                   },
                 },

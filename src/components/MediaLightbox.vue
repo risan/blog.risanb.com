@@ -301,7 +301,9 @@ function handleSwipeEnd() {
   const threshold = 60;
   const canGoNext = loop.value || currentIndex.value < items.value.length - 1;
   const canGoPrev = loop.value || currentIndex.value > 0;
-  const trackWidth = carouselTrackRef.value?.clientWidth || imageViewportRef.value?.clientWidth || window.innerWidth;
+  const trackWidth = carouselTrackRef.value
+    ? carouselTrackRef.value.getBoundingClientRect().width
+    : (imageViewportRef.value?.clientWidth || window.innerWidth);
   const stageWidth = trackWidth + 24;
   if (swipeOffset.value < -threshold && canGoNext) {
     isAnimatingSlide.value = true;
@@ -470,8 +472,7 @@ onBeforeUnmount(() => {
   <div
     v-if="isOpen && currentItem"
     ref="containerRef"
-    class="fixed inset-0 z-[9999] flex flex-col bg-[#0c0a08]/80 backdrop-blur-md select-none text-white font-sans transition-opacity duration-200"
-    tabindex="-1"
+    class="fixed inset-0 z-[9999] flex flex-col bg-[#080706]/94 backdrop-blur-md select-none text-white font-sans transition-opacity duration-200"
     @wheel="onWheel"
     @mousedown="onMouseDown"
     @touchstart="onTouchStart"
@@ -487,7 +488,7 @@ onBeforeUnmount(() => {
       <div class="flex items-center gap-3">
         <span
           v-if="!isSingle && items.length > 1"
-          class="text-xs sm:text-sm font-medium tracking-wider text-neutral-300 font-mono px-2.5 py-1 bg-white/10 rounded-md border border-white/15"
+          class="text-xs sm:text-sm font-medium tracking-wider text-neutral-300 font-mono px-2.5 py-1 bg-white/10 rounded border border-white/15"
         >
           {{ currentIndex + 1 }} / {{ items.length }}
         </span>
@@ -505,8 +506,7 @@ onBeforeUnmount(() => {
         <button
           v-if="currentItem.type === 'image'"
           type="button"
-          class="p-2 rounded-lg hover:bg-white/15 active:bg-white/25 transition cursor-pointer text-neutral-300 hover:text-white"
-          title="Perbesar (Zoom In)"
+          class="p-2 rounded hover:bg-white/15 active:bg-white/25 transition cursor-pointer text-neutral-300 hover:text-white"
           aria-label="Perbesar"
           @click="zoomIn"
         >
@@ -519,8 +519,7 @@ onBeforeUnmount(() => {
         <button
           v-if="currentItem.type === 'image'"
           type="button"
-          class="p-2 rounded-lg hover:bg-white/15 active:bg-white/25 transition cursor-pointer text-neutral-300 hover:text-white"
-          title="Perkecil (Zoom Out)"
+          class="p-2 rounded hover:bg-white/15 active:bg-white/25 transition cursor-pointer text-neutral-300 hover:text-white"
           aria-label="Perkecil"
           @click="zoomOut"
         >
@@ -533,8 +532,7 @@ onBeforeUnmount(() => {
         <button
           v-if="zoomLevel > 1"
           type="button"
-          class="px-2.5 py-1 text-xs font-mono font-medium rounded-md bg-white/20 hover:bg-white/30 text-white transition cursor-pointer"
-          title="Reset Ukuran (1:1)"
+          class="px-2.5 py-1 text-xs font-mono font-medium rounded bg-white/20 hover:bg-white/30 text-white transition cursor-pointer"
           @click="resetTransforms"
         >
           1:1
@@ -543,8 +541,7 @@ onBeforeUnmount(() => {
         <!-- Close -->
         <button
           type="button"
-          class="p-2 ml-1 rounded-lg bg-white/10 hover:bg-[#b4552d] active:bg-[#924220] transition cursor-pointer text-white"
-          title="Tutup (ESC)"
+          class="p-2 ml-1 rounded bg-white/10 hover:bg-[#b4552d] active:bg-[#924220] transition cursor-pointer text-white"
           aria-label="Tutup"
           @click="closeLightbox"
         >
@@ -570,8 +567,7 @@ onBeforeUnmount(() => {
       <button
         v-if="!isSingle && items.length > 1"
         type="button"
-        class="absolute left-3 sm:left-6 z-30 p-3 sm:p-4 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
-        :disabled="!loop && currentIndex === 0"
+        class="absolute left-3 sm:left-6 z-30 p-3 sm:p-4 rounded bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
         title="Gambar Sebelumnya (Panah Kiri)"
         aria-label="Sebelumnya"
         @mousedown.stop
@@ -594,101 +590,127 @@ onBeforeUnmount(() => {
         <!-- Previous Slide: large and right next to current slide -->
         <div
           v-if="prevItem"
-          class="absolute inset-0 flex items-center justify-center pointer-events-none select-none p-2 sm:p-4"
+          class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none p-2 sm:p-4"
           style="transform: translate3d(calc(-100% - 24px), 0, 0);"
         >
-          <img
-            v-if="prevItem.type === 'image'"
-            :src="prevItem.src"
-            :srcset="prevItem.srcset"
-            sizes="96vw"
-            :alt="prevItem.alt || ''"
-            class="max-w-[96vw] max-h-[82vh] object-contain rounded-lg shadow-2xl opacity-90"
-            draggable="false"
-          />
-          <div
-            v-else
-            class="w-[92vw] max-w-[1000px] aspect-video rounded-lg overflow-hidden bg-black/80 flex items-center justify-center opacity-90"
-          >
+          <div class="relative flex flex-col items-center justify-center max-w-[94vw] max-h-[82vh]">
             <img
-              v-if="prevItem.thumbnailSrc"
-              :src="prevItem.thumbnailSrc"
-              class="w-full h-full object-cover"
+              v-if="prevItem.type === 'image'"
+              :src="prevItem.src"
+              :srcset="prevItem.srcset"
+              sizes="94vw"
+              :alt="prevItem.alt || ''"
+              class="max-w-[94vw] max-h-[74vh] object-contain rounded shadow-2xl opacity-90"
+              draggable="false"
             />
+            <div
+              v-else
+              class="w-[92vw] max-w-[1000px] aspect-video rounded overflow-hidden bg-black/80 flex items-center justify-center opacity-90"
+            >
+              <img
+                v-if="prevItem.thumbnailSrc"
+                :src="prevItem.thumbnailSrc"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <p
+              v-if="prevItem.caption || prevItem.alt"
+              class="mt-2.5 max-w-2xl text-center font-sans text-xs sm:text-sm text-neutral-400 tracking-wide leading-relaxed font-normal opacity-90"
+            >
+              {{ prevItem.caption || prevItem.alt }}
+            </p>
           </div>
         </div>
 
         <!-- Current Active Slide -->
         <div
-          class="absolute inset-0 flex items-center justify-center select-none p-2 sm:p-4 pointer-events-auto"
+          class="absolute inset-0 flex flex-col items-center justify-center select-none p-2 sm:p-4 pointer-events-auto"
           :style="{
             transform: `translate3d(${panX}px, ${panY}px, 0) scale(${zoomLevel})`,
             transitionDuration: isDragging ? '0ms' : '200ms',
             transformOrigin: 'center center'
           }"
         >
-          <!-- Image Item -->
-          <img
-            v-if="currentItem.type === 'image'"
-            :src="currentItem.src"
-            :srcset="currentItem.srcset"
-            sizes="96vw"
-            :alt="currentItem.alt || ''"
-            class="max-w-[96vw] max-h-[82vh] object-contain rounded-lg shadow-2xl select-none"
-            :class="isDragging ? 'pointer-events-none' : ''"
-            draggable="false"
-          />
-
-          <!-- HTML5 Video Item -->
-          <video
-            v-else-if="currentItem.type === 'video'"
-            :src="currentItem.src"
-            :poster="currentItem.thumbnailSrc"
-            controls
-            autoplay
-            playsinline
-            class="max-w-[96vw] max-h-[82vh] rounded-lg shadow-2xl bg-black"
-          />
-
-          <!-- YouTube Embed Item -->
-          <div
-            v-else-if="currentItem.type === 'youtube'"
-            class="w-[92vw] max-w-[1000px] aspect-video rounded-lg overflow-hidden shadow-2xl bg-black"
-          >
-            <iframe
-              :src="`https://www.youtube.com/embed/${currentItem.src}?autoplay=1`"
-              class="w-full h-full border-0"
-              title="YouTube video player"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowfullscreen
+          <div class="relative flex flex-col items-center justify-center max-w-[94vw] max-h-[82vh]">
+            <!-- Image Item -->
+            <img
+              v-if="currentItem.type === 'image'"
+              :src="currentItem.src"
+              :srcset="currentItem.srcset"
+              sizes="94vw"
+              :alt="currentItem.alt || ''"
+              class="max-w-[94vw] max-h-[74vh] object-contain rounded select-none shadow-2xl"
+              :class="isDragging ? 'pointer-events-none' : ''"
+              draggable="false"
             />
+
+            <!-- HTML5 Video Item -->
+            <video
+              v-else-if="currentItem.type === 'video'"
+              :src="currentItem.src"
+              :poster="currentItem.thumbnailSrc"
+              controls
+              autoplay
+              playsinline
+              class="max-w-[94vw] max-h-[74vh] rounded shadow-2xl bg-black"
+            />
+
+            <!-- YouTube Embed Item -->
+            <div
+              v-else-if="currentItem.type === 'youtube'"
+              class="w-[92vw] max-w-[1000px] aspect-video rounded overflow-hidden shadow-2xl bg-black"
+            >
+              <iframe
+                :src="`https://www.youtube.com/embed/${currentItem.src}?autoplay=1`"
+                class="w-full h-full border-0"
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+              />
+            </div>
+
+            <!-- Caption directly below the image -->
+            <p
+              v-if="(currentItem.caption || currentItem.alt) && zoomLevel === 1"
+              class="mt-2.5 max-w-2xl text-center font-sans text-xs sm:text-sm text-neutral-300 tracking-wide leading-relaxed font-normal select-text pointer-events-auto"
+            >
+              {{ currentItem.caption || currentItem.alt }}
+            </p>
           </div>
         </div>
 
         <!-- Next Slide: large and right next to current slide -->
         <div
           v-if="nextItem"
-          class="absolute inset-0 flex items-center justify-center pointer-events-none select-none p-2 sm:p-4"
+          class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none p-2 sm:p-4"
           style="transform: translate3d(calc(100% + 24px), 0, 0);"
         >
-          <img
-            v-if="nextItem.type === 'image'"
-            :src="nextItem.src"
-            :srcset="nextItem.srcset"
-            sizes="96vw"
-            :alt="nextItem.alt || ''"
-            class="max-w-[96vw] max-h-[82vh] object-contain rounded-lg shadow-2xl opacity-90"
-            draggable="false"
-          />
-          <div
-            v-else
-            class="w-[92vw] max-w-[1000px] aspect-video rounded-lg overflow-hidden bg-black/80 flex items-center justify-center opacity-90"
-          >
+          <div class="relative flex flex-col items-center justify-center max-w-[94vw] max-h-[82vh]">
             <img
-              v-if="nextItem.thumbnailSrc"
-              :src="nextItem.thumbnailSrc"
-              class="w-full h-full object-cover"
+              v-if="nextItem.type === 'image'"
+              :src="nextItem.src"
+              :srcset="nextItem.srcset"
+              sizes="94vw"
+              :alt="nextItem.alt || ''"
+              class="max-w-[94vw] max-h-[74vh] object-contain rounded shadow-2xl opacity-90"
+              draggable="false"
             />
+            <div
+              v-else
+              class="w-[92vw] max-w-[1000px] aspect-video rounded overflow-hidden bg-black/80 flex items-center justify-center opacity-90"
+            >
+              <img
+                v-if="nextItem.thumbnailSrc"
+                :src="nextItem.thumbnailSrc"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <p
+              v-if="nextItem.caption || nextItem.alt"
+              class="mt-2.5 max-w-2xl text-center font-sans text-xs sm:text-sm text-neutral-400 tracking-wide leading-relaxed font-normal opacity-90"
+            >
+              {{ nextItem.caption || nextItem.alt }}
+            </p>
           </div>
         </div>
       </div>
@@ -697,8 +719,7 @@ onBeforeUnmount(() => {
       <button
         v-if="!isSingle && items.length > 1"
         type="button"
-        class="absolute right-3 sm:right-6 z-30 p-3 sm:p-4 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
-        :disabled="!loop && currentIndex === items.length - 1"
+        class="absolute right-3 sm:right-6 z-30 p-3 sm:p-4 rounded bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
         title="Gambar Selanjutnya (Panah Kanan)"
         aria-label="Selanjutnya"
         @mousedown.stop
@@ -711,25 +732,17 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Bottom Caption & Full-width Thumbnails Strip (No gradients) -->
+    <!-- Bottom Thumbnails Strip (No detached caption, clean toggle) -->
     <footer
-      class="relative z-20 flex flex-col items-center bg-transparent pt-2 pb-3 px-0 w-full"
+      v-if="!isSingle && items.length > 1 && showThumbnails"
+      class="relative z-20 flex flex-col items-center bg-transparent pt-1 pb-3 px-0 w-full"
       @mousedown.stop
     >
-      <!-- Caption & Thumbnail Reel Toggle Bar (Caption 100% centered, toggle icon-only absolute right) -->
-      <div class="relative w-full flex items-center justify-center min-h-[36px] px-4 sm:px-6 mb-2">
-        <!-- Caption text: 100% centered relative to the full screen -->
-        <p
-          v-if="currentItem.caption || currentItem.alt"
-          class="max-w-3xl text-center font-sans text-xs sm:text-sm text-neutral-200 tracking-wide leading-relaxed font-normal px-12 drop-shadow-md"
-        >
-          {{ currentItem.caption || currentItem.alt }}
-        </p>
-
-        <!-- Toggle Button: icon-only, positioned absolute right so it doesn't affect caption centering -->
+      <!-- Thumbnail Reel Toggle Bar -->
+      <div class="w-full flex items-center justify-end px-4 sm:px-6 mb-1.5">
         <button
-          v-if="!isSingle && items.length > 1 && showThumbnails"
           type="button"
-          class="absolute right-4 sm:right-6 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-neutral-300 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/15 backdrop-blur-sm shadow-md select-none"
+          class="rounded bg-white/10 hover:bg-white/20 active:bg-white/30 text-neutral-300 hover:text-white p-1.5 transition cursor-pointer border border-white/15 backdrop-blur-sm shadow-md select-none flex items-center justify-center"
           :title="userThumbnailsVisible ? 'Sembunyikan reels thumbnail' : 'Tampilkan reels thumbnail'"
           :aria-label="userThumbnailsVisible ? 'Sembunyikan Thumbnail' : 'Tampilkan Thumbnail'"
           @click="userThumbnailsVisible = !userThumbnailsVisible"
@@ -764,7 +777,7 @@ onBeforeUnmount(() => {
             :key="it.id"
             :ref="(el) => { thumbnailRefs[idx] = el as HTMLButtonElement }"
             type="button"
-            class="relative flex-shrink-0 w-20 h-14 sm:w-24 sm:h-16 md:w-28 md:h-18 rounded-md overflow-hidden transition-all duration-150 cursor-pointer border-2"
+            class="relative flex-shrink-0 w-20 h-14 sm:w-24 sm:h-16 md:w-28 md:h-18 rounded overflow-hidden transition-all duration-150 cursor-pointer border-2"
             :class="idx === currentIndex
               ? 'border-[#b4552d] ring-2 ring-[#b4552d]/60 opacity-100 scale-105 shadow-lg'
               : 'border-white/20 opacity-45 hover:opacity-90'"
