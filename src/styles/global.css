@@ -601,17 +601,16 @@ nav.journal a:hover {
   box-shadow: 0 2px 8px rgba(42, 31, 23, 0.08) !important;
   cursor: zoom-in;
   position: relative;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, filter 0.2s ease;
   flex: none !important;
 }
 
 .journal-content .media-gallery figure:hover,
 .journal-content .media-gallery .gallery-item:hover {
-  transform: scale(1.015);
-  box-shadow: 0 6px 20px rgba(42, 31, 23, 0.14) !important;
+  box-shadow: 0 8px 24px rgba(42, 31, 23, 0.16) !important;
+  filter: brightness(1.02);
   z-index: 2;
 }
-
 /* Item Spanning & Photographic Aspect Ratios */
 .journal-content .media-gallery .col-half {
   grid-column: span 3;
@@ -742,14 +741,13 @@ nav.journal a:hover {
   border-radius: 4px !important;
   display: block;
   box-shadow: none !important;
-  transition: transform 0.3s ease;
+  transition: filter 0.2s ease;
 }
 
 .journal-content .media-gallery figure:hover img,
 .journal-content .media-gallery .gallery-item:hover img {
-  transform: scale(1.03);
+  filter: contrast(1.02);
 }
-
 .journal-content .media-gallery figure video,
 .journal-content .media-gallery .gallery-item video {
   width: 100% !important;

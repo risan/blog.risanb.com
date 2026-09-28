@@ -186,7 +186,14 @@ export function rehypeFigure(options = {}) {
       }
     }
 
-    // Apply Bento layout classes and limits to a gallery container
+    // Helper to assign per-item responsive sizes matching its specific column span
+    function setItemSizes(figure, desktopSize, mobileSize) {
+      const img = figure?.children?.find((c) => c.type === 'element' && c.tagName === 'img');
+      if (img && img.properties) {
+        img.properties.sizes = `(min-width: 1040px) ${desktopSize}, (min-width: 640px) ${mobileSize}, 100vw`;
+      }
+    }
+
     // Apply dynamic editorial gallery layout classes and limits to a gallery container
     function applyGalleryLayout(galleryItems, limitConfig, galleryNode) {
       const count = galleryItems.length;
@@ -204,16 +211,27 @@ export function rehypeFigure(options = {}) {
         hash = ((hash << 5) - hash) + firstSrc.charCodeAt(i);
         hash |= 0;
       }
-      const variant = Math.abs(hash) % 3;
+
+      // Check if author explicitly specified layout="..." in shortcode
+      const rawLayout = galleryNode?.properties?.dataLayout;
+      let variant = Math.abs(hash) % 3;
+      if (rawLayout === '2-3-3' || rawLayout === 'top-hero') {
+        variant = 0;
+      } else if (rawLayout === '3-2-3' || rawLayout === 'center-hero') {
+        variant = 1;
+      } else if (rawLayout === '3-3-2' || rawLayout === 'bottom-hero') {
+        variant = 2;
+      }
 
       if (galleryNode?.properties) {
         galleryNode.properties.dataVariant = String(variant);
         ensureClass(galleryNode, `gallery-variant-${variant}`);
       }
-
       if (count === 2) {
-        galleryItems[0] && ensureClass(galleryItems[0], 'col-half');
-        galleryItems[1] && ensureClass(galleryItems[1], 'col-half');
+        galleryItems.forEach((it) => {
+          ensureClass(it, 'col-half');
+          setItemSizes(it, '460px', '50vw');
+        });
         return;
       }
 
@@ -222,41 +240,57 @@ export function rehypeFigure(options = {}) {
         ensureClass(galleryItems[1], 'mob-half');
         ensureClass(galleryItems[2], 'mob-half');
 
-        if (variant === 1) {
+        const useHero = rawLayout === 'hero' || rawLayout === 'magazine' || (rawLayout !== 'grid' && rawLayout !== 'equal' && variant === 1);
+
+        if (useHero) {
           // Feature left + 2 stacked right
           ensureClass(galleryItems[0], 'col-hero-left');
           ensureClass(galleryItems[1], 'col-stack-right');
           ensureClass(galleryItems[2], 'col-stack-right');
+          setItemSizes(galleryItems[0], '640px', '60vw');
+          setItemSizes(galleryItems[1], '340px', '40vw');
+          setItemSizes(galleryItems[2], '340px', '40vw');
         } else {
           // 3 equal columns
-          galleryItems.forEach((it) => ensureClass(it, 'col-third'));
+          galleryItems.forEach((it) => {
+            ensureClass(it, 'col-third');
+            setItemSizes(it, '320px', '33vw');
+          });
         }
         return;
       }
       if (count === 4) {
         // 2x2 grid
-        galleryItems.forEach((it) => ensureClass(it, 'col-half'));
+        galleryItems.forEach((it) => {
+          ensureClass(it, 'col-half');
+          setItemSizes(it, '460px', '50vw');
+        });
         return;
       }
 
       if (count === 5) {
         // Mobile: 1 full-width hero on top + 2 pairs below -> tight, flush square block
         ensureClass(galleryItems[0], 'mob-hero');
-        for (let i = 1; i < 5; i++) {
-          galleryItems[i] && ensureClass(galleryItems[i], 'mob-half');
+        setItemSizes(galleryItems[0], '460px', '100vw');
+        ensureClass(galleryItems[1], 'mob-half');
+        setItemSizes(galleryItems[1], '460px', '50vw');
+        for (let i = 2; i < 5; i++) {
+          ensureClass(galleryItems[i], 'mob-half');
+          ensureClass(galleryItems[i], 'col-third');
+          setItemSizes(galleryItems[i], '310px', '50vw');
         }
 
         // Desktop: 2 on top (50% each), 3 on bottom (33.3% each)
         ensureClass(galleryItems[0], 'col-half');
         ensureClass(galleryItems[1], 'col-half');
-        ensureClass(galleryItems[2], 'col-third');
-        ensureClass(galleryItems[3], 'col-third');
-        ensureClass(galleryItems[4], 'col-third');
         return;
       }
       if (count === 6) {
         // 2 rows of 3
-        galleryItems.forEach((it) => ensureClass(it, 'col-third'));
+        galleryItems.forEach((it) => {
+          ensureClass(it, 'col-third');
+          setItemSizes(it, '310px', '33vw');
+        });
         return;
       }
 
@@ -308,7 +342,11 @@ export function rehypeFigure(options = {}) {
         if (idx < visibleCount) {
           const patternClass = currentPattern[idx % currentPattern.length];
           ensureClass(it, patternClass);
-          // If this is the last visible item and there are more items, add +N badge!
+          if (patternClass === 'col-half' || patternClass === 'bento-large' || patternClass === 'bento-wide') {
+            setItemSizes(it, '460px', '50vw');
+          } else {
+            setItemSizes(it, '310px', '33vw');
+          }
           if (!isUnlimited && count > effectiveLimit && idx === effectiveLimit - 1) {
             const remaining = count - effectiveLimit;
             it.children.push({
