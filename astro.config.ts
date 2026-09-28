@@ -52,8 +52,9 @@ export default defineConfig({
         [
           rehypeFigure,
           {
-            minConsecutive: 3,
-            defaultLayout: 'justified',
+            minConsecutive: 2,
+            defaultLayout: 'bento',
+            defaultLimit: 8,
             defaultLoop: true,
             defaultThumbnails: true,
           },
