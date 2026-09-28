@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "npm run check && rm -rf node_modules/.astro .astro && astro build",
-    "build:only": "rm -rf node_modules/.astro .astro && astro build",
+    "build": "npm run check && rm -rf node_modules/.astro/data-store.json .astro && astro build",
+    "build:only": "rm -rf node_modules/.astro/data-store.json .astro && astro build",
     "preview": "astro preview",
     "check": "astro check && vue-tsc --noEmit",
     "check:astro": "astro check",

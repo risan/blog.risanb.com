@@ -279,12 +279,36 @@ export function rehypeFigure(options = {}) {
           ];
 
       const currentPattern = patterns[variant % patterns.length];
+      // Mobile-specific classes for flush, dynamic mobile layouts
+      if (visibleCount === 5) {
+        ensureClass(galleryItems[0], 'mob-hero');
+        for (let i = 1; i < 5; i++) {
+          galleryItems[i] && ensureClass(galleryItems[i], 'mob-half');
+        }
+      } else if (visibleCount === 3) {
+        ensureClass(galleryItems[0], 'mob-hero');
+        ensureClass(galleryItems[1], 'mob-half');
+        ensureClass(galleryItems[2], 'mob-half');
+      } else if (visibleCount === 7) {
+        ensureClass(galleryItems[0], 'mob-hero');
+        for (let i = 1; i < 7; i++) {
+          galleryItems[i] && ensureClass(galleryItems[i], 'mob-half');
+        }
+      } else if (visibleCount >= 8) {
+        ensureClass(galleryItems[0], 'mob-hero-3col');
+        ensureClass(galleryItems[1], 'mob-square-3col');
+        ensureClass(galleryItems[2], 'mob-square-3col');
+        ensureClass(galleryItems[3], 'mob-square-3col');
+        ensureClass(galleryItems[4], 'mob-square-3col');
+        ensureClass(galleryItems[5], 'mob-square-3col');
+        ensureClass(galleryItems[6], 'mob-wide-3col');
+        ensureClass(galleryItems[7], 'mob-square-3col');
+      }
 
       galleryItems.forEach((it, idx) => {
         if (idx < visibleCount) {
           const patternClass = currentPattern[idx % currentPattern.length];
           ensureClass(it, patternClass);
-
           // If this is the last visible item and there are more items, add +N badge!
           if (!isUnlimited && count > effectiveLimit && idx === effectiveLimit - 1) {
             const remaining = count - effectiveLimit;
