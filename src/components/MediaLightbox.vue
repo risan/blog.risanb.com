@@ -31,6 +31,7 @@ const panY = ref(0);
 
 // Touch / Mouse drag & swipe state
 const isDragging = ref(false);
+const isAnimatingSlide = ref(false);
 const dragStartX = ref(0);
 const dragStartY = ref(0);
 const dragCurrentX = ref(0);
@@ -41,6 +42,26 @@ let initialPinchDistance = 0;
 let initialPinchZoom = 1;
 
 const currentItem = computed<MediaItem | undefined>(() => items.value[currentIndex.value]);
+
+const prevIndex = computed<number | null>(() => {
+  if (items.value.length <= 1) return null;
+  if (currentIndex.value > 0) return currentIndex.value - 1;
+  return loop.value ? items.value.length - 1 : null;
+});
+
+const nextIndex = computed<number | null>(() => {
+  if (items.value.length <= 1) return null;
+  if (currentIndex.value < items.value.length - 1) return currentIndex.value + 1;
+  return loop.value ? 0 : null;
+});
+
+const prevItem = computed<MediaItem | null>(() => {
+  return prevIndex.value !== null ? items.value[prevIndex.value] : null;
+});
+
+const nextItem = computed<MediaItem | null>(() => {
+  return nextIndex.value !== null ? items.value[nextIndex.value] : null;
+});
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const imageViewportRef = ref<HTMLDivElement | null>(null);
@@ -160,7 +181,7 @@ function onWheel(e: WheelEvent) {
   zoomLevel.value = newZoom;
 }
 
-// Mouse / Touch handlers for Pan and Swipe
+// Mouse / Touch handlers for Pan and Carousel Swipe
 function onMouseDown(e: MouseEvent) {
   if ((e.target as HTMLElement)?.closest('button, a, input, video, iframe')) return;
   if (e.button !== 0) return;
@@ -186,7 +207,12 @@ function onMouseMove(e: MouseEvent) {
     panX.value += dx;
     panY.value += dy;
   } else if (!isSingle.value && items.value.length > 1) {
-    swipeOffset.value = e.clientX - dragStartX.value;
+    let delta = e.clientX - dragStartX.value;
+    if (!loop.value) {
+      if (currentIndex.value === 0 && delta > 0) delta *= 0.3;
+      if (currentIndex.value === items.value.length - 1 && delta < 0) delta *= 0.3;
+    }
+    swipeOffset.value = delta;
   }
 }
 
@@ -196,19 +222,7 @@ function onMouseUp() {
   window.removeEventListener('mousemove', onMouseMove);
   window.removeEventListener('mouseup', onMouseUp);
 
-  if (zoomLevel.value <= 1 && !isSingle.value && items.value.length > 1) {
-    const threshold = 60;
-    if (swipeOffset.value < -threshold) {
-      if (loop.value || currentIndex.value < items.value.length - 1) {
-        next();
-      }
-    } else if (swipeOffset.value > threshold) {
-      if (loop.value || currentIndex.value > 0) {
-        prev();
-      }
-    }
-    swipeOffset.value = 0;
-  }
+  handleSwipeEnd();
 }
 
 // Touch gestures
@@ -251,49 +265,69 @@ function onTouchMove(e: TouchEvent) {
   }
 
   if (!isDragging.value || e.touches.length !== 1) return;
-  const clientX = e.touches[0].clientX;
-  const clientY = e.touches[0].clientY;
-  const dx = clientX - dragCurrentX.value;
-  const dy = clientY - dragCurrentY.value;
-  dragCurrentX.value = clientX;
-  dragCurrentY.value = clientY;
+  const touch = e.touches[0];
+  const dx = touch.clientX - dragCurrentX.value;
+  const dy = touch.clientY - dragCurrentY.value;
+  dragCurrentX.value = touch.clientX;
+  dragCurrentY.value = touch.clientY;
 
   if (zoomLevel.value > 1) {
     e.preventDefault();
     panX.value += dx;
     panY.value += dy;
   } else if (!isSingle.value && items.value.length > 1) {
-    swipeOffset.value = clientX - dragStartX.value;
+    let delta = touch.clientX - dragStartX.value;
+    if (!loop.value) {
+      if (currentIndex.value === 0 && delta > 0) delta *= 0.3;
+      if (currentIndex.value === items.value.length - 1 && delta < 0) delta *= 0.3;
+    }
+    swipeOffset.value = delta;
   }
 }
 
-function onTouchEnd(e: TouchEvent) {
+function onTouchEnd() {
   if (isPinching.value) {
-    if (e.touches.length < 2) {
-      isPinching.value = false;
-    }
+    isPinching.value = false;
     return;
   }
+  if (!isDragging.value) return;
+  isDragging.value = false;
+  handleSwipeEnd();
+}
 
-  if (isDragging.value) {
-    isDragging.value = false;
-    if (zoomLevel.value <= 1 && !isSingle.value && items.value.length > 1) {
-      const threshold = 50;
-      if (swipeOffset.value < -threshold) {
-        if (loop.value || currentIndex.value < items.value.length - 1) {
-          next();
-        }
-      } else if (swipeOffset.value > threshold) {
-        if (loop.value || currentIndex.value > 0) {
-          prev();
-        }
-      }
+function handleSwipeEnd() {
+  if (zoomLevel.value > 1 || isSingle.value || items.value.length <= 1) return;
+
+  const threshold = 60;
+  const canGoNext = loop.value || currentIndex.value < items.value.length - 1;
+  const canGoPrev = loop.value || currentIndex.value > 0;
+
+  if (swipeOffset.value < -threshold && canGoNext) {
+    isAnimatingSlide.value = true;
+    swipeOffset.value = -window.innerWidth;
+    setTimeout(() => {
+      next();
       swipeOffset.value = 0;
-    }
+      isAnimatingSlide.value = false;
+    }, 200);
+  } else if (swipeOffset.value > threshold && canGoPrev) {
+    isAnimatingSlide.value = true;
+    swipeOffset.value = window.innerWidth;
+    setTimeout(() => {
+      prev();
+      swipeOffset.value = 0;
+      isAnimatingSlide.value = false;
+    }, 200);
+  } else {
+    isAnimatingSlide.value = true;
+    swipeOffset.value = 0;
+    setTimeout(() => {
+      isAnimatingSlide.value = false;
+    }, 200);
   }
 }
 
-// Keyboard shortcuts
+// Keyboard navigation
 function onKeyDown(e: KeyboardEvent) {
   if (!isOpen.value) return;
 
@@ -309,8 +343,6 @@ function onKeyDown(e: KeyboardEvent) {
     zoomOut();
   } else if (e.key === '0') {
     resetTransforms();
-  } else if (e.key === 't' || e.key === 'T') {
-    userThumbnailsVisible.value = !userThumbnailsVisible.value;
   }
 }
 
@@ -331,36 +363,34 @@ function handlePageClick(e: MouseEvent) {
 
     const childItems = Array.from(galleryEl.querySelectorAll<HTMLElement>('.gallery-item'));
     const parsedItems: MediaItem[] = childItems.map((child, idx) => {
-      const img = child.querySelector<HTMLImageElement>('img');
-      const video = child.querySelector<HTMLVideoElement>('video');
+      const vid = child.querySelector<HTMLVideoElement>('video');
       const iframe = child.querySelector<HTMLIFrameElement>('iframe');
+      const img = child.querySelector<HTMLImageElement>('img');
       const figcaption = child.querySelector<HTMLElement>('figcaption, .gallery-caption');
-      const captionText = figcaption?.textContent?.trim() || child.getAttribute('data-caption') || img?.alt || '';
+      const captionText = figcaption?.textContent?.trim() || img?.alt || '';
 
-      if (video) {
+      if (vid) {
         return {
-          id: `gallery-video-${idx}`,
+          id: `vid-${idx}`,
           type: 'video',
-          src: video.src || video.querySelector('source')?.src || '',
-          thumbnailSrc: video.poster || undefined,
-          alt: captionText,
+          src: vid.src || vid.querySelector('source')?.src || '',
+          thumbnailSrc: vid.poster,
           caption: captionText,
         };
-      } else if (iframe && iframe.src.includes('youtube.com/embed/')) {
-        const match = iframe.src.match(/\/embed\/([A-Za-z0-9_-]+)/);
-        const ytId = match ? match[1] : '';
+      } else if (iframe) {
+        const srcMatch = iframe.src.match(/youtube\.com\/embed\/([A-Za-z0-9_-]+)/);
+        const ytId = srcMatch ? srcMatch[1] : '';
         return {
-          id: `gallery-yt-${idx}`,
+          id: `yt-${idx}`,
           type: 'youtube',
           src: ytId,
-          thumbnailSrc: ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : undefined,
-          alt: iframe.title || captionText,
+          thumbnailSrc: ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined,
           caption: captionText,
         };
       } else {
         const src = img?.currentSrc || img?.src || '';
         return {
-          id: `gallery-img-${idx}`,
+          id: `img-${idx}`,
           type: 'image',
           src,
           thumbnailSrc: img?.src || src,
@@ -448,14 +478,14 @@ onBeforeUnmount(() => {
   >
     <!-- Top Bar: Counter & Essential Controls -->
     <header
-      class="relative z-20 flex items-center justify-between px-5 py-3.5 bg-gradient-to-b from-black/80 via-black/40 to-transparent"
+      class="relative z-20 flex items-center justify-between px-4 sm:px-6 py-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent"
       @mousedown.stop
     >
       <!-- Counter (left) -->
       <div class="flex items-center gap-3">
         <span
           v-if="!isSingle && items.length > 1"
-          class="text-sm font-medium tracking-wider text-neutral-300 font-mono px-2.5 py-1 bg-white/10 rounded-md border border-white/15"
+          class="text-xs sm:text-sm font-medium tracking-wider text-neutral-300 font-mono px-2.5 py-1 bg-white/10 rounded-md border border-white/15"
         >
           {{ currentIndex + 1 }} / {{ items.length }}
         </span>
@@ -467,8 +497,8 @@ onBeforeUnmount(() => {
         </span>
       </div>
 
-      <!-- Essential Controls (right) -->
-      <div class="flex items-center gap-1.5 sm:gap-2 text-neutral-200">
+      <!-- Essential Controls (right): Zoom In, Zoom Out, Reset 1:1, Close -->
+      <div class="flex items-center gap-1 sm:gap-2 text-neutral-200">
         <!-- Zoom In -->
         <button
           v-if="currentItem.type === 'image'"
@@ -508,21 +538,6 @@ onBeforeUnmount(() => {
           1:1
         </button>
 
-        <!-- Toggle Thumbnail Strip -->
-        <button
-          v-if="!isSingle && items.length > 1 && showThumbnails"
-          type="button"
-          class="p-2 rounded-lg hover:bg-white/15 active:bg-white/25 transition cursor-pointer text-neutral-300 hover:text-white"
-          :class="{ 'text-[#b4552d]': userThumbnailsVisible }"
-          title="Tampilkan / Sembunyikan Thumbnail"
-          aria-label="Toggle Thumbnail"
-          @click="userThumbnailsVisible = !userThumbnailsVisible"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-          </svg>
-        </button>
-
         <!-- Close -->
         <button
           type="button"
@@ -538,10 +553,10 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <!-- Main Stage Area -->
+    <!-- Main Carousel Stage Area -->
     <div
       ref="imageViewportRef"
-      class="relative flex-1 flex items-center justify-center overflow-hidden p-2 sm:p-6"
+      class="relative flex-1 w-full overflow-hidden flex items-center justify-center p-2 sm:p-6"
       :class="{
         'cursor-grab': zoomLevel > 1 && !isDragging,
         'cursor-grabbing': zoomLevel > 1 && isDragging,
@@ -553,7 +568,7 @@ onBeforeUnmount(() => {
       <button
         v-if="!isSingle && items.length > 1"
         type="button"
-        class="absolute left-3 sm:left-6 z-20 p-3 sm:p-4 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
+        class="absolute left-3 sm:left-6 z-30 p-3 sm:p-4 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
         :disabled="!loop && currentIndex === 0"
         title="Gambar Sebelumnya (Panah Kiri)"
         aria-label="Sebelumnya"
@@ -565,49 +580,109 @@ onBeforeUnmount(() => {
         </svg>
       </button>
 
-      <!-- Media Container -->
+      <!-- Carousel Sliding Track (Slides prev, current, next together when dragging) -->
       <div
-        class="relative flex items-center justify-center max-w-full max-h-full transition-transform"
+        class="relative w-full h-full flex items-center justify-center pointer-events-none"
         :style="{
-          transform: `translate3d(${panX + swipeOffset}px, ${panY}px, 0) scale(${zoomLevel})`,
-          transitionDuration: isDragging ? '0ms' : '200ms',
-          transformOrigin: 'center center'
+          transform: `translate3d(${swipeOffset}px, 0, 0)`,
+          transition: isAnimatingSlide ? 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)' : 'none'
         }"
       >
-        <!-- Image Item -->
-        <img
-          v-if="currentItem.type === 'image'"
-          :src="currentItem.src"
-          :srcset="currentItem.srcset"
-          sizes="95vw"
-          :alt="currentItem.alt || ''"
-          class="max-w-[92vw] max-h-[72vh] object-contain rounded-lg shadow-2xl pointer-events-none select-none transition-opacity duration-300"
-          draggable="false"
-        />
-
-        <!-- HTML5 Video Item -->
-        <video
-          v-else-if="currentItem.type === 'video'"
-          :src="currentItem.src"
-          :poster="currentItem.thumbnailSrc"
-          controls
-          autoplay
-          playsinline
-          class="max-w-[92vw] max-h-[72vh] rounded-lg shadow-2xl bg-black"
-        />
-
-        <!-- YouTube Embed Item -->
+        <!-- Previous Slide into scene when dragging right -->
         <div
-          v-else-if="currentItem.type === 'youtube'"
-          class="w-[90vw] max-w-[960px] aspect-video rounded-lg overflow-hidden shadow-2xl bg-black"
+          v-if="prevItem"
+          class="absolute inset-0 flex items-center justify-center pointer-events-none select-none p-4 sm:p-8"
+          style="transform: translate3d(-100%, 0, 0);"
         >
-          <iframe
-            :src="`https://www.youtube.com/embed/${currentItem.src}?autoplay=1`"
-            class="w-full h-full border-0"
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen
+          <img
+            v-if="prevItem.type === 'image'"
+            :src="prevItem.src"
+            :alt="prevItem.alt || ''"
+            class="max-w-[92vw] max-h-[72vh] object-contain rounded-lg shadow-2xl opacity-75"
+            draggable="false"
           />
+          <div
+            v-else
+            class="w-[90vw] max-w-[960px] aspect-video rounded-lg overflow-hidden bg-black/80 flex items-center justify-center opacity-75"
+          >
+            <img
+              v-if="prevItem.thumbnailSrc"
+              :src="prevItem.thumbnailSrc"
+              class="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        <!-- Current Active Slide -->
+        <div
+          class="absolute inset-0 flex items-center justify-center select-none p-4 sm:p-8 pointer-events-auto"
+          :style="{
+            transform: `translate3d(${panX}px, ${panY}px, 0) scale(${zoomLevel})`,
+            transitionDuration: isDragging ? '0ms' : '200ms',
+            transformOrigin: 'center center'
+          }"
+        >
+          <!-- Image Item -->
+          <img
+            v-if="currentItem.type === 'image'"
+            :src="currentItem.src"
+            :srcset="currentItem.srcset"
+            sizes="95vw"
+            :alt="currentItem.alt || ''"
+            class="max-w-[92vw] max-h-[72vh] object-contain rounded-lg shadow-2xl select-none"
+            :class="isDragging ? 'pointer-events-none' : ''"
+            draggable="false"
+          />
+
+          <!-- HTML5 Video Item -->
+          <video
+            v-else-if="currentItem.type === 'video'"
+            :src="currentItem.src"
+            :poster="currentItem.thumbnailSrc"
+            controls
+            autoplay
+            playsinline
+            class="max-w-[92vw] max-h-[72vh] rounded-lg shadow-2xl bg-black"
+          />
+
+          <!-- YouTube Embed Item -->
+          <div
+            v-else-if="currentItem.type === 'youtube'"
+            class="w-[90vw] max-w-[960px] aspect-video rounded-lg overflow-hidden shadow-2xl bg-black"
+          >
+            <iframe
+              :src="`https://www.youtube.com/embed/${currentItem.src}?autoplay=1`"
+              class="w-full h-full border-0"
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            />
+          </div>
+        </div>
+
+        <!-- Next Slide into scene when dragging left -->
+        <div
+          v-if="nextItem"
+          class="absolute inset-0 flex items-center justify-center pointer-events-none select-none p-4 sm:p-8"
+          style="transform: translate3d(100%, 0, 0);"
+        >
+          <img
+            v-if="nextItem.type === 'image'"
+            :src="nextItem.src"
+            :alt="nextItem.alt || ''"
+            class="max-w-[92vw] max-h-[72vh] object-contain rounded-lg shadow-2xl opacity-75"
+            draggable="false"
+          />
+          <div
+            v-else
+            class="w-[90vw] max-w-[960px] aspect-video rounded-lg overflow-hidden bg-black/80 flex items-center justify-center opacity-75"
+          >
+            <img
+              v-if="nextItem.thumbnailSrc"
+              :src="nextItem.thumbnailSrc"
+              class="w-full h-full object-cover"
+            />
+          </div>
         </div>
       </div>
 
@@ -615,7 +690,7 @@ onBeforeUnmount(() => {
       <button
         v-if="!isSingle && items.length > 1"
         type="button"
-        class="absolute right-3 sm:right-6 z-20 p-3 sm:p-4 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
+        class="absolute right-3 sm:right-6 z-30 p-3 sm:p-4 rounded-full bg-black/60 hover:bg-black/85 text-white/90 hover:text-white backdrop-blur-sm border border-white/15 transition-all cursor-pointer shadow-2xl disabled:opacity-20 disabled:pointer-events-none"
         :disabled="!loop && currentIndex === items.length - 1"
         title="Gambar Selanjutnya (Panah Kanan)"
         aria-label="Selanjutnya"
@@ -630,55 +705,87 @@ onBeforeUnmount(() => {
 
     <!-- Bottom Caption & Full-width Thumbnails Strip -->
     <footer
-      class="relative z-20 flex flex-col items-center bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-3 pb-3 px-0 w-full"
+      class="relative z-20 flex flex-col items-center bg-gradient-to-t from-black/95 via-black/80 to-transparent pt-2 pb-3 px-0 w-full"
       @mousedown.stop
     >
-      <!-- Caption text: Clean, elegant, legible modern typography -->
-      <div
-        v-if="currentItem.caption || currentItem.alt"
-        class="max-w-3xl text-center mb-3 px-6"
-      >
-        <p class="font-sans text-sm sm:text-base text-neutral-200 tracking-wide leading-relaxed font-normal drop-shadow-sm">
-          {{ currentItem.caption || currentItem.alt }}
-        </p>
-      </div>
-
-      <!-- Thumbnails Strip: Full Screen Width & Hidden Scrollbar -->
-      <div
-        v-if="!isSingle && items.length > 1 && showThumbnails && userThumbnailsVisible"
-        ref="thumbnailStripRef"
-        class="w-full flex items-center justify-start gap-3 overflow-x-auto py-2.5 px-6 no-scrollbar"
-      >
-        <button
-          v-for="(it, idx) in items"
-          :key="it.id"
-          :ref="(el) => { thumbnailRefs[idx] = el as HTMLButtonElement }"
-          type="button"
-          class="relative flex-shrink-0 w-20 h-14 sm:w-24 sm:h-16 md:w-28 md:h-18 rounded-lg overflow-hidden transition-all duration-150 cursor-pointer border-2"
-          :class="idx === currentIndex
-            ? 'border-[#b4552d] ring-2 ring-[#b4552d]/60 opacity-100 scale-105'
-            : 'border-white/20 opacity-40 hover:opacity-85'"
-          :title="`Buka gambar ${idx + 1}`"
-          :aria-label="`Gambar ${idx + 1}`"
-          @click="goTo(idx)"
-        >
-          <img
-            v-if="it.type === 'image'"
-            :src="it.thumbnailSrc || it.src"
-            :alt="it.alt || ''"
-            class="w-full h-full object-cover pointer-events-none"
-            loading="lazy"
-          />
-          <div
-            v-else
-            class="w-full h-full bg-neutral-800 flex items-center justify-center text-white/80"
+      <!-- Caption & Thumbnail Reel Toggle Bar -->
+      <div class="w-full max-w-5xl flex items-center justify-between px-4 sm:px-6 mb-2 min-h-[36px]">
+        <!-- Caption text: Clean modern legible font -->
+        <div class="flex-1 text-center pr-2">
+          <p
+            v-if="currentItem.caption || currentItem.alt"
+            class="font-sans text-xs sm:text-sm md:text-base text-neutral-200 tracking-wide leading-relaxed font-normal drop-shadow-sm"
           >
-            <svg class="w-6 h-6 text-amber-200" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
+            {{ currentItem.caption || currentItem.alt }}
+          </p>
+        </div>
+
+        <!-- Toggle Thumbnail Button: right next to thumbnail reels with Up/Down Arrow -->
+        <button
+          v-if="!isSingle && items.length > 1 && showThumbnails"
+          type="button"
+          class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-xs font-medium text-neutral-200 hover:text-white transition cursor-pointer border border-white/15 backdrop-blur-sm shadow-md select-none"
+          :title="userThumbnailsVisible ? 'Sembunyikan reels thumbnail' : 'Tampilkan reels thumbnail'"
+          :aria-label="userThumbnailsVisible ? 'Sembunyikan Thumbnail' : 'Tampilkan Thumbnail'"
+          @click="userThumbnailsVisible = !userThumbnailsVisible"
+        >
+          <!-- Down arrow when open (pointing down to close) -->
+          <svg v-if="userThumbnailsVisible" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 9l-7 7-7-7" />
+          </svg>
+          <!-- Up arrow when closed (pointing up to open) -->
+          <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 15l7-7 7 7" />
+          </svg>
+          <span class="text-[11px] sm:text-xs">{{ userThumbnailsVisible ? 'Tutup' : 'Thumbnail' }}</span>
         </button>
       </div>
+
+      <!-- Thumbnails Strip: Full Screen Width & Hidden Scrollbar with smooth collapse/expand -->
+      <transition
+        enter-active-class="transition-all duration-200 ease-out"
+        enter-from-class="opacity-0 max-h-0 py-0"
+        enter-to-class="opacity-100 max-h-32 py-2"
+        leave-active-class="transition-all duration-150 ease-in"
+        leave-from-class="opacity-100 max-h-32 py-2"
+        leave-to-class="opacity-0 max-h-0 py-0"
+      >
+        <div
+          v-show="!isSingle && items.length > 1 && showThumbnails && userThumbnailsVisible"
+          ref="thumbnailStripRef"
+          class="w-full flex items-center justify-start gap-2.5 sm:gap-3 overflow-x-auto py-2 px-4 sm:px-6 no-scrollbar"
+        >
+          <button
+            v-for="(it, idx) in items"
+            :key="it.id"
+            :ref="(el) => { thumbnailRefs[idx] = el as HTMLButtonElement }"
+            type="button"
+            class="relative flex-shrink-0 w-20 h-14 sm:w-24 sm:h-16 md:w-28 md:h-18 rounded-md overflow-hidden transition-all duration-150 cursor-pointer border-2"
+            :class="idx === currentIndex
+              ? 'border-[#b4552d] ring-2 ring-[#b4552d]/60 opacity-100 scale-105 shadow-lg'
+              : 'border-white/20 opacity-45 hover:opacity-90'"
+            :title="`Buka gambar ${idx + 1}`"
+            :aria-label="`Gambar ${idx + 1}`"
+            @click="goTo(idx)"
+          >
+            <img
+              v-if="it.type === 'image'"
+              :src="it.thumbnailSrc || it.src"
+              :alt="it.alt || ''"
+              class="w-full h-full object-cover pointer-events-none"
+              loading="lazy"
+            />
+            <div
+              v-else
+              class="w-full h-full bg-neutral-800 flex items-center justify-center text-white/80"
+            >
+              <svg class="w-6 h-6 text-amber-200" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </button>
+        </div>
+      </transition>
     </footer>
   </div>
 </template>
