@@ -891,9 +891,8 @@ nav.journal a:hover {
   }
 
   /* 8-item mobile Bento layout (Image #1): dynamic 3-column grid (Apple/Google Photos style) */
-  .journal-content .media-gallery:has(.mob-hero-3col),
-  .journal-content .media-gallery[data-count="8"],
-  .journal-content .media-gallery[data-limit="8"] {
+  .journal-content .media-gallery.has-mob-3col,
+  .journal-content .media-gallery:has(.mob-hero-3col) {
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 4px !important;
   }

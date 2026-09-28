@@ -168,6 +168,33 @@ function toggleZoom() {
   }
 }
 
+async function downloadCurrentMedia() {
+  const item = currentItem.value;
+  if (!item || !item.src) return;
+
+  try {
+    const response = await fetch(item.src);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    const filename = item.src.split('/').pop()?.split('?')[0] || 'photo.webp';
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch {
+    const link = document.createElement('a');
+    link.href = item.src;
+    link.download = '';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
 // Mouse Wheel Zoom
 function onWheel(e: WheelEvent) {
   if (!currentItem.value || currentItem.value.type !== 'image') return;
@@ -472,7 +499,7 @@ onBeforeUnmount(() => {
   <div
     v-if="isOpen && currentItem"
     ref="containerRef"
-    class="fixed inset-0 z-[9999] flex flex-col bg-[#080706]/94 backdrop-blur-md select-none text-white font-sans transition-opacity duration-200"
+    class="fixed inset-0 z-[9999] flex flex-col bg-[#090807]/86 backdrop-blur-md select-none text-white font-sans transition-opacity duration-200"
     @wheel="onWheel"
     @mousedown="onMouseDown"
     @touchstart="onTouchStart"
@@ -533,9 +560,24 @@ onBeforeUnmount(() => {
           v-if="zoomLevel > 1"
           type="button"
           class="px-2.5 py-1 text-xs font-mono font-medium rounded bg-white/20 hover:bg-white/30 text-white transition cursor-pointer"
+          title="Reset Ukuran (1:1)"
           @click="resetTransforms"
         >
           1:1
+        </button>
+
+        <!-- Download Button -->
+        <button
+          v-if="currentItem.type === 'image'"
+          type="button"
+          class="p-2 rounded hover:bg-white/15 active:bg-white/25 transition cursor-pointer text-neutral-300 hover:text-white"
+          title="Unduh Gambar"
+          aria-label="Unduh"
+          @click="downloadCurrentMedia"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
         </button>
 
         <!-- Close -->
@@ -742,18 +784,18 @@ onBeforeUnmount(() => {
       <div class="w-full flex items-center justify-end px-4 sm:px-6 mb-1.5">
         <button
           type="button"
-          class="rounded bg-white/10 hover:bg-white/20 active:bg-white/30 text-neutral-300 hover:text-white p-1.5 transition cursor-pointer border border-white/15 backdrop-blur-sm shadow-md select-none flex items-center justify-center"
+          class="rounded p-1.5 transition cursor-pointer border backdrop-blur-sm shadow-md select-none flex items-center justify-center gap-1.5 text-xs"
+          :class="userThumbnailsVisible
+            ? 'bg-white/20 hover:bg-white/30 text-white border-white/30'
+            : 'bg-white/10 hover:bg-white/20 text-neutral-400 hover:text-white border-white/15'"
           :title="userThumbnailsVisible ? 'Sembunyikan reels thumbnail' : 'Tampilkan reels thumbnail'"
           :aria-label="userThumbnailsVisible ? 'Sembunyikan Thumbnail' : 'Tampilkan Thumbnail'"
           @click="userThumbnailsVisible = !userThumbnailsVisible"
         >
-          <!-- Down arrow when open -->
-          <svg v-if="userThumbnailsVisible" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 9l-7 7-7-7" />
-          </svg>
-          <!-- Up arrow when closed -->
-          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 15l7-7 7 7" />
+          <!-- Filmstrip / thumbnail frames icon -->
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.8" />
+            <path stroke-linecap="round" stroke-width="1.8" d="M7 5v14M17 5v14M3 12h18" />
           </svg>
         </button>
       </div>

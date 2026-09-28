@@ -164,9 +164,8 @@ export function rehypeFigure(options = {}) {
 
       const img = figure.children?.find((c) => c.type === 'element' && c.tagName === 'img');
       if (img && img.properties) {
-        // Optimize thumbnail sizes matching the 4-col desktop / 3-col mobile grid
-        img.properties.sizes = '(min-width: 1040px) 300px, (min-width: 640px) 33vw, 50vw';
-
+        // Responsive sizes matching the 920px breakout grid (heroes can span up to 613px-920px)
+        img.properties.sizes = '(min-width: 1040px) 700px, (min-width: 640px) 60vw, 100vw';
         const rawSrc = img.properties.src;
         const diskPath = resolveImagePath(rawSrc, mdFilePath);
         let ar = 1.5;
@@ -219,6 +218,10 @@ export function rehypeFigure(options = {}) {
       }
 
       if (count === 3) {
+        ensureClass(galleryItems[0], 'mob-hero');
+        ensureClass(galleryItems[1], 'mob-half');
+        ensureClass(galleryItems[2], 'mob-half');
+
         if (variant === 1) {
           // Feature left + 2 stacked right
           ensureClass(galleryItems[0], 'col-hero-left');
@@ -230,7 +233,6 @@ export function rehypeFigure(options = {}) {
         }
         return;
       }
-
       if (count === 4) {
         // 2x2 grid
         galleryItems.forEach((it) => ensureClass(it, 'col-half'));
@@ -238,7 +240,13 @@ export function rehypeFigure(options = {}) {
       }
 
       if (count === 5) {
-        // 2 on top (50% each), 3 on bottom (33.3% each)
+        // Mobile: 1 full-width hero on top + 2 pairs below -> tight, flush square block
+        ensureClass(galleryItems[0], 'mob-hero');
+        for (let i = 1; i < 5; i++) {
+          galleryItems[i] && ensureClass(galleryItems[i], 'mob-half');
+        }
+
+        // Desktop: 2 on top (50% each), 3 on bottom (33.3% each)
         ensureClass(galleryItems[0], 'col-half');
         ensureClass(galleryItems[1], 'col-half');
         ensureClass(galleryItems[2], 'col-third');
@@ -246,7 +254,6 @@ export function rehypeFigure(options = {}) {
         ensureClass(galleryItems[4], 'col-third');
         return;
       }
-
       if (count === 6) {
         // 2 rows of 3
         galleryItems.forEach((it) => ensureClass(it, 'col-third'));
@@ -279,22 +286,15 @@ export function rehypeFigure(options = {}) {
           ];
 
       const currentPattern = patterns[variant % patterns.length];
-      // Mobile-specific classes for flush, dynamic mobile layouts
-      if (visibleCount === 5) {
-        ensureClass(galleryItems[0], 'mob-hero');
-        for (let i = 1; i < 5; i++) {
-          galleryItems[i] && ensureClass(galleryItems[i], 'mob-half');
-        }
-      } else if (visibleCount === 3) {
-        ensureClass(galleryItems[0], 'mob-hero');
-        ensureClass(galleryItems[1], 'mob-half');
-        ensureClass(galleryItems[2], 'mob-half');
-      } else if (visibleCount === 7) {
+      if (visibleCount === 7) {
         ensureClass(galleryItems[0], 'mob-hero');
         for (let i = 1; i < 7; i++) {
           galleryItems[i] && ensureClass(galleryItems[i], 'mob-half');
         }
       } else if (visibleCount >= 8) {
+        if (galleryNode?.properties) {
+          ensureClass(galleryNode, 'has-mob-3col');
+        }
         ensureClass(galleryItems[0], 'mob-hero-3col');
         ensureClass(galleryItems[1], 'mob-square-3col');
         ensureClass(galleryItems[2], 'mob-square-3col');
@@ -304,7 +304,6 @@ export function rehypeFigure(options = {}) {
         ensureClass(galleryItems[6], 'mob-wide-3col');
         ensureClass(galleryItems[7], 'mob-square-3col');
       }
-
       galleryItems.forEach((it, idx) => {
         if (idx < visibleCount) {
           const patternClass = currentPattern[idx % currentPattern.length];
