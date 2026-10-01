@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import SearchModal from '../components/SearchModal.vue';
 import MediaLightbox from '../components/MediaLightbox.vue';
+import Locomotive from '../components/Locomotive.astro';
 
 interface Props {
   title: string;
@@ -79,10 +80,10 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <header class="masthead">
       <div class="shell">
         <a class="brand" href="/">
-          <img class="brand-mark" src="/favicon.svg" width="40" height="40" alt="" />
+          <Locomotive class="brand-mark" />
           <span class="wordmark">Risan Bagja</span>
         </a>
-        <span class="tagline">catatan perjalanan &amp; hal-hal kecil</span>
+        <span class="tagline">Jurnal perjalanan sejak 2007</span>
         <nav class="journal" aria-label="Navigasi Utama">
           <ul>
             {
@@ -132,9 +133,9 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
       <div class="inner">
         <div class="footer-main">
           <a class="footer-mark" href="/" aria-label="Beranda">
-            <img src="/favicon.svg" width="36" height="36" alt="" />
+            <Locomotive />
           </a>
-          <p class="footer-note">Sampai jumpa di cerita berikutnya.</p>
+          <p class="footer-note">Terima kasih sudah mampir.</p>
           <nav aria-label="Tautan Terkait">
             <a href="https://risanb.com">Code</a>
             <a href="https://x.com/risanbagja">X</a>

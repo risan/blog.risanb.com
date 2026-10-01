@@ -110,9 +110,13 @@ const sortedTags = [...terms.entries()].sort((a, b) => b[1] - a[1] || a[0].local
               <a href={postHref(post.id)}>
                 <Image
                   src={post.data.images[0]}
-                  width={i === 0 ? 720 : 360}
-                  height={i === 0 ? 720 : 360}
-                  sizes={i === 0 ? '(min-width: 1180px) 560px, 66vw' : '(min-width: 1180px) 280px, 33vw'}
+                  width={i === 0 ? 1080 : 540}
+                  height={i === 0 ? 1080 : 540}
+                  sizes={
+                    i === 0
+                      ? '(min-width: 1180px) 815px, (min-width: 821px) 75vw, 150vw'
+                      : '(min-width: 1180px) 400px, (min-width: 821px) 38vw, 75vw'
+                  }
                   fit="cover"
                   alt=""
                 />
