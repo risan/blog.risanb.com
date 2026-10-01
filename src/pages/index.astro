@@ -2,42 +2,33 @@
 import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PostList from '../components/PostList.astro';
 import TagIcon from '../components/TagIcon.astro';
-import { toPlainText } from '../lib/plain-text';
+import { postHref } from '../lib/posts';
 import risanPhoto from '../assets/risan.webp';
 
 const posts = (await getCollection('blog')).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 
- // 5 Best writings for "Sorotan Utama" (carefully selected featured long-form essays)
- const featuredIds = [
-   'bertualang-ke-karimunjawa',
-   'stasiun-stasiun-tunnelbana',
-   'enam-hal-yang-mengagumkan-dari-swedia',
-   'angin-dingin-dari-siberia',
-   'petualangan-imajiner',
- ];
- 
- const featuredPosts = featuredIds
-   .map((id) => posts.find((p) => p.id === id || p.id === `${id}/index`))
-   .filter((p): p is (typeof posts)[0] => Boolean(p));
- 
- // 5 Recent writings for "Tulisan Terkini", excluding the ones in "Sorotan Utama"
- const recentPosts = posts
-   .filter((p) => !featuredPosts.some((f) => f.id === p.id))
-   .slice(0, 5);
- 
- // Photo & travel strip (3 visual posts with photos, excluding featured and recent)
- const photoPosts = posts
-   .filter(
-     (p) =>
-       !featuredPosts.some((f) => f.id === p.id) &&
-       !recentPosts.some((r) => r.id === p.id) &&
-       p.data.images.length > 0 &&
-       (p.data.categories.includes('photos') || p.data.categories.includes('travel')),
-   )
-   .slice(0, 3);
+// Hand-picked long reads for "Sorotan Utama".
+const featuredIds = [
+  'bertualang-ke-karimunjawa',
+  'stasiun-stasiun-tunnelbana',
+  'enam-hal-yang-mengagumkan-dari-swedia',
+  'angin-dingin-dari-siberia',
+  'petualangan-imajiner',
+];
+
+const featuredPosts = featuredIds
+  .map((id) => posts.find((p) => p.id === id || p.id === `${id}/index`))
+  .filter((p): p is (typeof posts)[0] => Boolean(p));
+
+const recentPosts = posts.filter((p) => !featuredPosts.includes(p)).slice(0, 5);
+
+const photoPosts = posts
+  .filter((p) => p.data.categories.includes('photos') && p.data.images.length > 0)
+  .slice(0, 6);
 
 // Tag frequencies
 const terms = new Map<string, number>();
@@ -45,50 +36,6 @@ for (const post of posts) {
   for (const t of post.data.tags) terms.set(t, (terms.get(t) ?? 0) + 1);
 }
 const sortedTags = [...terms.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
-const fmt = (d: Date) =>
-  d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-
-const href = (id: string) => `/${id.replace(/\/index$/, '')}/`;
-
- const getThumbnail = (post: (typeof posts)[0]) => {
-   // 1. Cover image from frontmatter
-   if (post.data.images && post.data.images.length > 0 && post.data.images[0]) {
-     return { src: post.data.images[0], attribution: null };
-   }
-   // 2. OpenGraph or body image fallback
-   if (post.body) {
-     const match = post.body.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-     if (match && match[2]) {
-       return { src: match[2], attribution: match[1] || null };
-     }
-   }
-   // 3. Fallback free image matching content
-   return { src: risanPhoto, attribution: 'Foto oleh Risan Bagja' };
- };
- 
- const excerpt = (post: (typeof posts)[0]) => {
-   if (post.data.description) {
-     const desc = post.data.description;
-     return desc.length > 95 ? `${desc.slice(0, 95).trim()}…` : desc;
-   }
-   if (!post.body) return '';
-   let text = toPlainText(post.body);
-   if (text.toLowerCase().startsWith(post.data.title.toLowerCase())) {
-     text = text.slice(post.data.title.length).trim();
-   }
-   return text.length > 95 ? `${text.slice(0, 95).trim()}…` : text;
- };
-
-const categoryLabel = (cats: string[]) => {
-  if (!cats || cats.length === 0) return 'Catatan';
-  const c = cats[0].toLowerCase();
-  if (c === 'travel') return 'Perjalanan';
-  if (c === 'writing') return 'Tulisan';
-  if (c === 'journal') return 'Catatan';
-  if (c === 'photos') return 'Foto';
-  return cats[0];
-};
 ---
 
 <BaseLayout
@@ -140,35 +87,7 @@ const categoryLabel = (cats: string[]) => {
           <h3>Sorotan Utama</h3>
           <span class="eyebrow-pill">Pilihan</span>
         </div>
-        <ul class="home-entry-list">
-          {
-            featuredPosts.map((post) => {
-              const thumb = getThumbnail(post);
-              return (
-                <li class="home-entry-item">
-                  <a href={href(post.id)} class="home-entry-card">
-                    {thumb && (
-                      <span class="card-thumb">
-                        {typeof thumb.src === 'string' ? (
-                          <img src={thumb.src} width="180" height="180" alt="" loading="lazy" />
-                        ) : (
-                          <Image src={thumb.src} width={180} height={180} alt="" />
-                        )}
-                      </span>
-                    )}
-                    <span class="card-body">
-                      <h4>{post.data.title}</h4>
-                      <p class="excerpt">{excerpt(post)}</p>
-                      <span class="when">
-                        {fmt(post.data.date)} · {categoryLabel(post.data.categories)}
-                      </span>
-                    </span>
-                  </a>
-                </li>
-              );
-            })
-          }
-        </ul>
+        <PostList posts={featuredPosts} />
       </section>
 
       <section class="section-block">
@@ -176,54 +95,32 @@ const categoryLabel = (cats: string[]) => {
           <h3>Tulisan Terkini</h3>
           <a href="/arsip/">Semua ({posts.length}) →</a>
         </div>
-        <ul class="home-entry-list">
-          {
-            recentPosts.map((post) => {
-              const thumb = getThumbnail(post);
-              return (
-                <li class="home-entry-item">
-                  <a href={href(post.id)} class="home-entry-card">
-                    {thumb && (
-                      <span class="card-thumb">
-                        {typeof thumb.src === 'string' ? (
-                          <img src={thumb.src} width="180" height="180" alt="" loading="lazy" />
-                        ) : (
-                          <Image src={thumb.src} width={180} height={180} alt="" />
-                        )}
-                      </span>
-                    )}
-                    <span class="card-body">
-                      <h4>{post.data.title}</h4>
-                      <p class="excerpt">{excerpt(post)}</p>
-                      <span class="when">
-                        {fmt(post.data.date)} · {categoryLabel(post.data.categories)}
-                      </span>
-                    </span>
-                  </a>
-                </li>
-              );
-            })
-          }
-        </ul>
+        <PostList posts={recentPosts} />
       </section>
     </div>
-    {/* Section: Foto & Perjalanan */}
     {
       photoPosts.length > 0 && (
-        <>
-          <div class="sechead" style="margin-top: 64px;">
-            <h3>Foto &amp; Perjalanan</h3>
-            <a href="/categories/photos/">Galeri foto →</a>
+        <section class="section-block" style="margin-top: 64px;">
+          <div class="sechead">
+            <h3>Galeri Foto</h3>
+            <a href="/categories/photos/">Lihat semua →</a>
           </div>
           <div class="strip">
-            {photoPosts.map((post) => (
-              <a href={href(post.id)} title={post.data.title}>
-                <Image src={post.data.images[0]} width={360} height={360} alt={post.data.title} />
-                <div class="strip-body">{post.data.title}</div>
+            {photoPosts.map((post, i) => (
+              <a href={postHref(post.id)}>
+                <Image
+                  src={post.data.images[0]}
+                  width={i === 0 ? 720 : 360}
+                  height={i === 0 ? 720 : 360}
+                  sizes={i === 0 ? '(min-width: 1180px) 560px, 66vw' : '(min-width: 1180px) 280px, 33vw'}
+                  fit="cover"
+                  alt=""
+                />
+                <span class="strip-body">{post.data.title}</span>
               </a>
             ))}
           </div>
-        </>
+        </section>
       )
     }
 
@@ -353,6 +250,7 @@ const categoryLabel = (cats: string[]) => {
 
   .home-columns .section-block {
     margin-top: 0;
+    min-width: 0;
   }
 
   .eyebrow-pill {
@@ -365,121 +263,5 @@ const categoryLabel = (cats: string[]) => {
     padding: 3px 10px;
     border-radius: 999px;
     border: 1px solid var(--rule);
-  }
-
-  .home-entry-list {
-    list-style: none;
-    margin: 16px 0 0;
-    padding: 0;
-  }
-
-  .home-entry-item {
-    border-bottom: 1px solid var(--rule);
-  }
-
-  .home-entry-card {
-    display: grid;
-    grid-template-columns: 88px 1fr;
-    gap: 16px;
-    align-items: center;
-    padding: 14px 0;
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .home-entry-card .card-thumb {
-    width: 88px;
-    height: 88px;
-    aspect-ratio: 1 / 1;
-    border-radius: 4px;
-    overflow: hidden;
-    background: var(--sand-2);
-    border: 1px solid var(--rule);
-    flex-shrink: 0;
-  }
-
-  .home-entry-card .card-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-
-  .home-entry-card:hover .card-thumb img {
-    transform: scale(1.06);
-  }
-
-  .home-entry-card .card-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-  }
-
-  .home-entry-card h4 {
-    font-family: var(--font-disp);
-    font-weight: 600;
-    font-size: 0.9375rem;
-    line-height: 1.25;
-    letter-spacing: -0.015em;
-    margin: 0;
-    color: var(--ink);
-    font-variation-settings: 'SOFT' 30, 'WONK' 1;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    height: 1.25em;
-    transition: color 0.15s ease;
-  }
-
-  @media (min-width: 1024px) {
-    .home-entry-card h4 {
-      font-size: 1.0625rem;
-    }
-  }
-
-  .home-entry-card:hover h4 {
-    color: var(--terra);
-  }
-
-  .home-entry-card .excerpt {
-    font-size: 0.84375rem;
-    line-height: 1.45;
-    color: var(--muted);
-    margin: 5px 0 0;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    height: 2.9em;
-  }
-
-  .home-entry-card .when {
-    font-size: 0.71875rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--terra-soft);
-    display: block;
-    margin-top: 5px;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  @media (max-width: 560px) {
-    .home-entry-card {
-      grid-template-columns: 80px 1fr;
-      gap: 12px;
-      padding: 12px 0;
-    }
-    .home-entry-card .card-thumb {
-      width: 80px;
-      height: 80px;
-    }
   }
 </style>

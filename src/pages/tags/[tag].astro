@@ -1,9 +1,8 @@
 ---
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { toPlainText } from '../../lib/plain-text';
-
-type Post = CollectionEntry<'blog'>;
+import PostList from '../../components/PostList.astro';
+import type { Post } from '../../lib/posts';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -27,18 +26,6 @@ export async function getStaticPaths() {
 }
 
 const { tag, entries } = Astro.props;
-
-const fmt = (d: Date) =>
-  d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-
-const href = (id: string) => `/${id.replace(/\/index$/, '')}/`;
-
-const excerpt = (post: Post) => {
-  if (post.data.description) return post.data.description;
-  if (!post.body) return '';
-  const text = toPlainText(post.body);
-  return text.length > 130 ? `${text.slice(0, 130).trim()}…` : text;
-};
 ---
 
 <BaseLayout title={`#${tag} — Risan Bagja`} description={`Catatan dengan tag #${tag}.`}>
@@ -51,20 +38,6 @@ const excerpt = (post: Post) => {
       <p class="lede">{entries.length} catatan dengan tag ini.</p>
     </div>
 
-    <ul class="entries" style="margin-top: 48px;">
-      {
-        entries.map((post) => (
-          <li>
-            <a href={href(post.id)} class="no-thumb">
-              <span>
-                <h4>{post.data.title}</h4>
-                <p>{excerpt(post)}</p>
-                <span class="when">{fmt(post.data.date)}</span>
-              </span>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    <PostList posts={entries} twoColumn />
   </div>
 </BaseLayout>

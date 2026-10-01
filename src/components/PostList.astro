@@ -1,0 +1,43 @@
+---
+import { Image } from 'astro:assets';
+import { categoryLabel, excerpt, formatDate, postHref, type Post } from '../lib/posts';
+
+interface Props {
+  posts: Post[];
+  /** Flow the list into two columns on wide screens (category and tag pages). */
+  twoColumn?: boolean;
+  /** Hide the category on pages where every post shares it. */
+  showCategory?: boolean;
+}
+
+const { posts, twoColumn = false, showCategory = true } = Astro.props;
+---
+
+<ul class:list={['post-list', { 'post-list--two-col': twoColumn }]}>
+  {
+    posts.map((post) => {
+      const cover = post.data.images[0];
+      return (
+        <li>
+          <a href={postHref(post.id)} class="post-card">
+            <span class="post-card-thumb" aria-hidden="true">
+              {cover ? (
+                <Image src={cover} width={88} height={88} layout="fixed" fit="cover" alt="" />
+              ) : (
+                <span class="post-card-initial">{post.data.title.charAt(0)}</span>
+              )}
+            </span>
+            <span class="post-card-body">
+              <span class="post-card-title">{post.data.title}</span>
+              <span class="post-card-excerpt">{excerpt(post)}</span>
+              <span class="post-card-meta">
+                {formatDate(post.data.date)}
+                {showCategory && ` · ${categoryLabel(post.data.categories)}`}
+              </span>
+            </span>
+          </a>
+        </li>
+      );
+    })
+  }
+</ul>

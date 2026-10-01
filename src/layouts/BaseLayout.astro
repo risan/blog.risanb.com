@@ -68,6 +68,8 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
       href={new URL('/rss.xml', Astro.site)}
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#fbf6ed" />
 
     <meta name="color-scheme" content="light" />
   </head>
@@ -76,7 +78,11 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
 
     <header class="masthead">
       <div class="shell">
-        <a class="wordmark" href="/">Risan Bagja</a>
+        <a class="brand" href="/">
+          <img class="brand-mark" src="/favicon.svg" width="40" height="40" alt="" />
+          <span class="wordmark">Risan Bagja</span>
+        </a>
+        <span class="tagline">catatan perjalanan &amp; hal-hal kecil</span>
         <nav class="journal" aria-label="Navigasi Utama">
           <ul>
             {
@@ -110,7 +116,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
                 <span>Cari</span>
-                <kbd>⌘K</kbd>
+                <kbd data-shortcut-label>Ctrl K</kbd>
               </button>
             </li>
           </ul>
@@ -122,19 +128,34 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
       <slot />
     </main>
 
-    <footer class="ocean">
+    <footer class="site-footer">
       <div class="inner">
-        <a class="wordmark" href="/">Risan Bagja</a>
-        <nav aria-label="Tautan Terkait">
-          <a href="https://risanb.com">Code</a>
-          <a href="https://twitter.com/risanbagja">Twitter</a>
-          <a href="/rss.xml">RSS</a>
-        </nav>
+        <div class="footer-main">
+          <a class="footer-mark" href="/" aria-label="Beranda">
+            <img src="/favicon.svg" width="36" height="36" alt="" />
+          </a>
+          <p class="footer-note">Sampai jumpa di cerita berikutnya.</p>
+          <nav aria-label="Tautan Terkait">
+            <a href="https://risanb.com">Code</a>
+            <a href="https://x.com/risanbagja">X</a>
+            <a href="/rss.xml">RSS</a>
+          </nav>
+        </div>
         <div class="fine">
-          <span>© Risan Bagja {new Date().getFullYear()}</span>
+          <span>© 2007–{new Date().getFullYear()} Risan Bagja</span>
+          <a href="#">Kembali ke atas ↑</a>
         </div>
       </div>
     </footer>
+
+    <script>
+      // The button ships "Ctrl K"; Apple keyboards say ⌘ instead.
+      if (/Mac|iPhone|iPad/.test(navigator.userAgent)) {
+        document.querySelectorAll('[data-shortcut-label]').forEach((kbd) => {
+          kbd.textContent = '⌘K';
+        });
+      }
+    </script>
 
     {/* client:idle, not client:load: the palette is worth ~0ms until someone
         actually searches, and the index is fetched on first open rather than on
