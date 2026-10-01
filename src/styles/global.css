@@ -170,15 +170,14 @@ header.masthead > .shell {
 }
 
 .brand-mark {
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   display: block;
-  transform: rotate(-4deg);
-  transition: transform 0.25s ease;
+  transition: transform 0.35s ease;
 }
 
 .brand:hover .brand-mark {
-  transform: rotate(0deg);
+  transform: rotate(-6deg);
 }
 
 .wordmark {
@@ -197,13 +196,24 @@ header.masthead > .shell {
 }
 
 .tagline {
-  font-family: var(--font-hand);
-  font-size: 1.375rem;
-  line-height: 1.2;
-  color: var(--terra);
-  margin-top: 6px;
-  transform: rotate(-1.2deg);
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  /* --muted is 3.85:1 on sand; this small text needs 4.5:1. */
+  color: #75654f;
+}
+
+.tagline::before,
+.tagline::after {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--terra-soft);
 }
 
 nav.journal {
@@ -669,15 +679,14 @@ nav.journal a:hover {
   box-shadow: none;
 }
 
+/* No will-change or translate3d: they pin the layer at its resting raster
+   scale. Sharpness comes from the 1.5x `sizes` set in rehype-figure. */
 .journal-content .media-gallery .gallery-item > img {
-  transform: translate3d(0, 0, 0) scale(1);
-  backface-visibility: hidden;
-  will-change: transform;
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease;
 }
 
 .journal-content .media-gallery .gallery-item:hover > img {
-  transform: translate3d(0, 0, 0) scale(1.05);
+  transform: scale(1.05);
   filter: brightness(1.02);
 }
 
@@ -838,42 +847,39 @@ nav.journal a:hover {
 
 /* Author card */
 .author-card {
-  margin: 64px 0 0;
-  background: var(--card);
-  border: 1px solid var(--rule);
-  border-radius: 20px;
-  padding: 28px;
+  margin: 48px 0 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
   display: flex;
-  gap: 22px;
+  gap: 14px;
   align-items: center;
 }
 .author-card img {
-  width: 80px;
-  height: 80px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  border: 3px solid var(--sand-2);
 }
 .author-card .sig {
-  display: inline-block;
-  font-family: var(--font-hand);
-  font-size: 2rem;
-  line-height: 1;
-  color: var(--terra);
-  transform: rotate(-2deg);
-  margin-bottom: 8px;
+  display: block;
+  font-family: var(--font-disp);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--ink);
+  font-variation-settings: 'SOFT' 30, 'WONK' 1;
 }
 .author-card p {
-  margin: 0;
-  font-size: 0.9375rem;
-  line-height: 1.62;
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--muted);
 }
 .author-card a {
-  font-size: 0.875rem;
-  display: inline-block;
-  margin-top: 10px;
+  margin-left: 0.35em;
+  white-space: nowrap;
   text-decoration: none;
   font-weight: 600;
 }
@@ -1220,14 +1226,14 @@ nav.journal a:hover {
   transition: border-color 0.2s ease;
 }
 
-/* No scale on hover: resampling a small thumbnail mid-transition is what
-   made it go sharp, blurry, then sharp again. */
+/* The file is 2x the box's device pixels (see PostList). With only 1x the
+   hover zoom upsamples it and the thumbnail goes soft mid-transition. */
 .post-card-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: filter 0.25s ease;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.25s ease;
 }
 
 .post-card-initial {
@@ -1247,6 +1253,7 @@ nav.journal a:hover {
 }
 
 .post-card:hover .post-card-thumb img {
+  transform: scale(1.08);
   filter: brightness(1.06) saturate(1.08);
 }
 
@@ -1345,13 +1352,10 @@ nav.journal a:hover {
   height: 100%;
   object-fit: cover;
   display: block;
-  transform: translate3d(0, 0, 0) scale(1);
-  backface-visibility: hidden;
-  will-change: transform;
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .strip a:hover img {
-  transform: translate3d(0, 0, 0) scale(1.06);
+  transform: scale(1.06);
 }
 .strip .strip-body {
   position: absolute;
@@ -1430,28 +1434,36 @@ nav.journal a:hover {
   max-width: 54ch;
 }
 
-.year-group {
-  margin-top: 56px;
+.archive {
+  margin-top: 40px;
 }
+
+.year-group {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 24px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+}
+
 .year-group h2 {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  margin: 0;
   font-family: var(--font-disp);
-  font-size: 1.5rem;
+  font-size: 1.375rem;
   font-weight: 600;
+  line-height: 1.6;
   letter-spacing: -0.02em;
   color: var(--ink);
-  margin: 0 0 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--rule);
   font-variation-settings: 'SOFT' 30, 'WONK' 1;
 }
+
 .entry-list {
   list-style: none;
   margin: 0;
   padding: 0;
-}
-
-.entry-list li {
-  border-bottom: 1px solid var(--rule);
 }
 
 .entry-list a {
@@ -1459,18 +1471,15 @@ nav.journal a:hover {
   grid-template-columns: 1fr auto;
   gap: 20px;
   align-items: baseline;
-  padding: 16px 0;
+  padding: 5px 0;
   text-decoration: none;
   color: var(--ink);
 }
 
 .entry-list .title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   font-family: var(--font-disp);
-  font-size: 1.1875rem;
-  line-height: 1.35;
+  font-size: 1.0625rem;
+  line-height: 1.4;
   letter-spacing: -0.01em;
   color: var(--ink);
   transition: color 0.15s ease;
@@ -1483,24 +1492,27 @@ nav.journal a:hover {
 .entry-list .meta {
   font-family: var(--font-mono, monospace);
   font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--muted);
   white-space: nowrap;
 }
 
-.entry-list--compact a {
-  padding: 12px 0;
-}
-
-.entry-list--compact .title {
-  font-size: 1.0625rem;
-  line-height: 1.35;
-}
-
 @media (max-width: 640px) {
+  .year-group {
+    grid-template-columns: 52px 1fr;
+    gap: 12px;
+  }
+
+  .year-group h2 {
+    font-size: 1.125rem;
+  }
+
   .entry-list a {
-    grid-template-columns: 1fr;
-    gap: 4px;
+    gap: 12px;
+  }
+
+  .entry-list .title {
+    font-size: 1rem;
   }
 }
 
@@ -1524,17 +1536,17 @@ footer.site-footer .inner {
 }
 .footer-mark img {
   display: block;
-  width: 36px;
-  height: 36px;
-  transform: rotate(-4deg);
+  width: 48px;
+  height: 48px;
 }
 .footer-note {
   flex: 1;
   margin: 0;
-  font-family: var(--font-hand);
-  font-size: 1.5rem;
-  line-height: 1.2;
-  color: var(--terra-soft);
+  font-family: var(--font-disp);
+  font-style: italic;
+  font-size: 1.125rem;
+  line-height: 1.3;
+  color: #e9dcc6;
 }
 footer.site-footer nav {
   display: flex;
@@ -1618,6 +1630,11 @@ footer.site-footer .fine a {
   .wordmark {
     font-size: 2rem;
   }
+  .brand-mark {
+    width: 48px;
+    height: 48px;
+  }
+
   .featured .ph {
     aspect-ratio: 4 / 3;
   }
@@ -1670,6 +1687,7 @@ footer.site-footer .fine a {
   }
   .featured img,
   .strip img,
+  .post-card-thumb img,
   .journal-content .media-gallery .gallery-item > img {
     transition: none;
   }

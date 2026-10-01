@@ -22,7 +22,14 @@ const { posts, twoColumn = false, showCategory = true } = Astro.props;
           <a href={postHref(post.id)} class="post-card">
             <span class="post-card-thumb" aria-hidden="true">
               {cover ? (
-                <Image src={cover} width={88} height={88} layout="fixed" fit="cover" alt="" />
+                <Image
+                  src={cover}
+                  width={176}
+                  height={176}
+                  layout="fixed"
+                  fit="cover"
+                  alt=""
+                />
               ) : (
                 <span class="post-card-initial">{post.data.title.charAt(0)}</span>
               )}

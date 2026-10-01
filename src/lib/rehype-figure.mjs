@@ -152,6 +152,10 @@ const PHONE_BENTO = [
 
 const DESKTOP_PX = { 2: 300, 3: 460, 4: 610, 6: 920 };
 
+// Tiles zoom on hover. A file at exactly the tile's width gets upsampled
+// mid-transition and goes soft; 1.5x stays sharp in every frame.
+const ZOOM_HEADROOM = 1.5;
+
 function hashString(value) {
   let hash = 0;
   for (let i = 0; i < value.length; i++) {
@@ -276,9 +280,10 @@ function cellStyle(desktop, phone) {
 }
 
 function cellSizes(desktop, phone, phoneColumns) {
-  const phoneVw = Math.round((phone.c / phoneColumns) * 100);
-  const tabletVw = Math.round((desktop.c / 6) * 100);
-  return `(min-width: 1040px) ${DESKTOP_PX[desktop.c]}px, (min-width: 641px) ${tabletVw}vw, ${phoneVw}vw`;
+  const phoneVw = Math.round((phone.c / phoneColumns) * 100 * ZOOM_HEADROOM);
+  const tabletVw = Math.round((desktop.c / 6) * 100 * ZOOM_HEADROOM);
+  const desktopPx = Math.round(DESKTOP_PX[desktop.c] * ZOOM_HEADROOM);
+  return `(min-width: 1040px) ${desktopPx}px, (min-width: 641px) ${tabletVw}vw, ${phoneVw}vw`;
 }
 
 /**
