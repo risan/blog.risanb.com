@@ -3,7 +3,8 @@ import '../styles/global.css';
 import SearchModal from '../components/SearchModal.vue';
 import MediaLightbox from '../components/MediaLightbox.vue';
 import { Image } from 'astro:assets';
-import logo from '../assets/logo.webp';
+import logoScene from '../assets/logo-scene.webp';
+import logoTrain from '../assets/logo-train.webp';
 import logoFooter from '../assets/logo-footer.webp';
 
 interface Props {
@@ -82,7 +83,12 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <header class="masthead">
       <div class="shell">
         <a class="brand" href="/">
-          <Image class="brand-mark" src={logo} width={120} layout="fixed" loading="eager" alt="" />
+          <span class="brand-mark">
+            <Image src={logoScene} width={120} layout="fixed" loading="eager" alt="" />
+            <span class="brand-train">
+              <Image src={logoTrain} width={240} layout="fixed" loading="eager" alt="" />
+            </span>
+          </span>
           <span class="wordmark">Risan Bagja</span>
         </a>
         <span class="tagline">Dari peron ke peron</span>
