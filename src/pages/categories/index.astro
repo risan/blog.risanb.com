@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { CATEGORY_LABELS } from '../../lib/posts';
 
 const posts = await getCollection('blog');
 
@@ -9,13 +10,6 @@ for (const post of posts) {
   for (const c of post.data.categories) terms.set(c, (terms.get(c) ?? 0) + 1);
 }
 const sorted = [...terms.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-
-const categoryLabels: Record<string, string> = {
-  travel: 'Perjalanan',
-  writing: 'Tulisan',
-  journal: 'Catatan',
-  photos: 'Foto',
-};
 ---
 
 <BaseLayout title="Kategori — Risan Bagja" description="Jelajahi catatan berdasarkan kategori.">
@@ -28,7 +22,7 @@ const categoryLabels: Record<string, string> = {
     <ul class="entries" style="margin-top: 48px;">
       {
         sorted.map(([name, count]) => {
-          const label = categoryLabels[name] ?? name;
+          const label = CATEGORY_LABELS[name] ?? name;
           return (
             <li>
               <a href={`/categories/${name}/`} class="no-thumb">

@@ -68,5 +68,9 @@ export default defineConfig({
   image: {
     layout: 'constrained',
     responsiveStyles: true,
+    // Astro's list starts at 640w. Gallery tiles (~130px on phones) and the
+    // lightbox filmstrip (~112px) need the small widths, or the browser
+    // downsamples a 640w file 5x and it smears while hover transitions run.
+    breakpoints: [320, 480, 640, 750, 828, 1080, 1280, 1668, 2048, 2560],
   },
 });

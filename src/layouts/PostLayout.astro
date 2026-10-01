@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import { getImage, Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
+import { categoryLabel } from '../lib/posts';
 
 type Post = CollectionEntry<'blog'>;
 
@@ -32,16 +33,6 @@ const cover = images[0];
 const ogImage = cover
   ? await getImage({ src: cover, width: 1200, format: 'jpeg', quality: 80 })
   : undefined;
-
-const categoryLabel = (cats: string[]) => {
-  if (!cats || cats.length === 0) return 'Catatan';
-  const c = cats[0].toLowerCase();
-  if (c === 'travel') return 'Perjalanan';
-  if (c === 'writing') return 'Tulisan';
-  if (c === 'journal') return 'Catatan';
-  if (c === 'photos') return 'Foto';
-  return cats[0];
-};
 
 const primaryCat = categories[0] ?? 'journal';
 const primaryCatLabel = categoryLabel(categories);
@@ -101,22 +92,14 @@ const primaryCatLabel = categoryLabel(categories);
         <slot />
       </div>
 
-      {/* Handwritten signature signoff */}
-      <div class="signoff">
-        <span class="sig">Risan Bagja</span>
-        <div class="line" />
-      </div>
-
-      {/* Author card */}
-      <div class="author-card">
-        <img src="/img/risan.jpg" alt="Risan Bagja" width="80" height="80" />
+      <aside class="author-card" aria-label="Tentang penulis">
+        <img src="/img/risan.jpg" alt="" width="80" height="80" />
         <div>
-          <h3>Risan Bagja</h3>
-          <p>
-            Menulis tentang hal-hal yang saya temui, buku yang saya baca, dan catatan perjalanan.
-          </p>
+          <span class="sig">Risan Bagja</span>
+          <p>Masih suka membuka peta. Sekarang rutenya dipilih bersama Dwi dan Kinanti.</p>
+          <a href="/tentang/">Tentang saya →</a>
         </div>
-      </div>
+      </aside>
 
       {/* Topic tags pills */}
       {tags.length > 0 && (

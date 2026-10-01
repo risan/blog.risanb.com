@@ -70,11 +70,215 @@ function wrapEmbedItem(item) {
     type: 'element',
     tagName: 'figure',
     properties: {
-      className: ['gallery-item', 'bento-square'],
+      className: ['gallery-item'],
       style: '--ar: 1.777;',
     },
     children: [item, createVideoBadge()],
   };
+}
+
+const PORTRAIT_MAX_AR = 0.9;
+
+/**
+ * Desktop row blocks on a 6-column grid. Each cell has a column span `c`, an
+ * optional row span `r`, and — on exactly one cell per grid row — an aspect
+ * ratio `a` that sets that row's height. The other cells stretch to the row,
+ * so every row is flush whatever the photos' own shapes are.
+ */
+const BLOCKS = {
+  full: [{ c: 6, a: '2/1' }],
+  pair: [{ c: 3, a: '3/2' }, { c: 3 }],
+  trio: [{ c: 2, a: '4/3' }, { c: 2 }, { c: 2 }],
+  wideLeft: [{ c: 4, a: '16/9' }, { c: 2 }],
+  wideRight: [{ c: 2 }, { c: 4, a: '16/9' }],
+  heroLeft: [{ c: 4, r: 2 }, { c: 2, a: '4/3' }, { c: 2, a: '4/3' }],
+  heroRight: [{ c: 2, a: '4/3' }, { c: 4, r: 2 }, { c: 2, a: '4/3' }],
+  // A 2-column cell beside a 4:3 cell comes out ~2:3, a portrait's own shape.
+  portraitLeft: [{ c: 2 }, { c: 4, a: '4/3' }],
+  portraitRight: [{ c: 4, a: '4/3' }, { c: 2 }],
+  portraitPair: [{ c: 3, a: '4/5' }, { c: 3 }],
+  portraitSolo: [{ c: 6, a: '16/9' }],
+};
+
+/** Block sequences for a run of landscape photos, keyed by run length. */
+const RECIPES = {
+  1: [['full']],
+  2: [['pair'], ['wideLeft'], ['wideRight']],
+  3: [['trio'], ['heroLeft'], ['heroRight'], ['full', 'pair']],
+  4: [['pair', 'pair'], ['wideLeft', 'wideRight'], ['wideRight', 'wideLeft'], ['full', 'trio']],
+  5: [['pair', 'trio'], ['trio', 'pair'], ['heroLeft', 'pair'], ['pair', 'heroRight'], ['wideLeft', 'trio']],
+  6: [['trio', 'trio'], ['heroRight', 'heroLeft'], ['heroLeft', 'trio'], ['trio', 'heroLeft']],
+  7: [
+    ['pair', 'pair', 'trio'],
+    ['trio', 'pair', 'pair'],
+    ['pair', 'trio', 'pair'],
+    ['heroLeft', 'wideRight', 'pair'],
+  ],
+  8: [
+    ['pair', 'trio', 'trio'],
+    ['trio', 'pair', 'trio'],
+    ['trio', 'trio', 'pair'],
+    ['heroLeft', 'trio', 'pair'],
+    ['trio', 'heroRight', 'pair'],
+    ['heroRight', 'pair', 'heroLeft'],
+  ],
+};
+
+/** Layout names an author can pass to the gallery shortcode. */
+const NAMED_RECIPES = {
+  '2-3-3': ['pair', 'trio', 'trio'],
+  'top-hero': ['pair', 'trio', 'trio'],
+  '3-2-3': ['trio', 'pair', 'trio'],
+  'center-hero': ['trio', 'pair', 'trio'],
+  '3-3-2': ['trio', 'trio', 'pair'],
+  'bottom-hero': ['trio', 'trio', 'pair'],
+  hero: ['heroLeft'],
+  magazine: ['heroLeft'],
+  grid: ['trio'],
+  equal: ['trio'],
+};
+
+/** Phone bento for 8 tiles on 3 columns: a 2×2 hero, then squares and one wide tile. */
+const PHONE_BENTO = [
+  { c: 2, r: 2 },
+  { c: 1, a: '1/1' },
+  { c: 1, a: '1/1' },
+  { c: 1, a: '1/1' },
+  { c: 1 },
+  { c: 1 },
+  { c: 2 },
+  { c: 1, a: '1/1' },
+];
+
+const DESKTOP_PX = { 2: 300, 3: 460, 4: 610, 6: 920 };
+
+function hashString(value) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+
+  return Math.abs(hash);
+}
+
+function landscapeRecipe(length, seed) {
+  if (length > 8) {
+    return [...landscapeRecipe(5, seed), ...landscapeRecipe(length - 5, seed + 1)];
+  }
+
+  const options = RECIPES[length];
+  return options[seed % options.length];
+}
+
+/**
+ * Desktop cells for every tile, in order. Each portrait claims a neighbour as
+ * a two-tile block shaped for it; the landscape runs between them take a
+ * seeded recipe, so galleries vary but always render the same way.
+ */
+function composeDesktop(isPortrait, seed, namedRecipe) {
+  const count = isPortrait.length;
+  const blocks = [];
+  let runStart = 0;
+  let runIndex = 0;
+
+  const flushRun = (end) => {
+    const length = end - runStart;
+    if (length > 0) {
+      const named = namedRecipe?.reduce((sum, name) => sum + BLOCKS[name].length, 0) === length;
+      blocks.push(...(named ? namedRecipe : landscapeRecipe(length, seed + runIndex)));
+      runIndex++;
+    }
+  };
+
+  let i = 0;
+  while (i < count) {
+    if (!isPortrait[i]) {
+      i++;
+      continue;
+    }
+
+    if (i + 1 < count) {
+      flushRun(i);
+      blocks.push(isPortrait[i + 1] ? 'portraitPair' : 'portraitLeft');
+      i += 2;
+    } else if (i > runStart) {
+      flushRun(i - 1);
+      blocks.push('portraitRight');
+      i += 1;
+    } else {
+      blocks.push('portraitSolo');
+      i += 1;
+    }
+
+    runStart = i;
+  }
+
+  flushRun(count);
+
+  // heroRight's last tile sits bottom-left; the last tile must end the grid
+  // because it may carry the "+N" badge.
+  if (blocks.at(-1) === 'heroRight') {
+    blocks[blocks.length - 1] = 'heroLeft';
+  }
+
+  return blocks.flatMap((name) => BLOCKS[name]);
+}
+
+/**
+ * Phone cells: 8 landscape tiles become a 3-column bento; anything else is a
+ * 2-column grid, led by a full-width tile when the count is odd.
+ */
+function composePhone(isPortrait) {
+  const count = isPortrait.length;
+  if (count === 8 && !isPortrait.some(Boolean)) {
+    return { columns: 3, cells: PHONE_BENTO };
+  }
+
+  const cells = [];
+  let i = 0;
+  if (count % 2 === 1) {
+    cells.push({ c: 2, a: isPortrait[0] ? '4/5' : '16/10' });
+    i = 1;
+  }
+
+  for (; i < count; i += 2) {
+    cells.push({ c: 1, a: isPortrait[i] || isPortrait[i + 1] ? '3/4' : '4/3' }, { c: 1 });
+  }
+
+  return { columns: 2, cells };
+}
+
+function readAspectRatio(figure) {
+  const match = String(figure.properties?.style || '').match(/--ar:\s*([\d.]+)/);
+  return match ? Number(match[1]) : 1.5;
+}
+
+function cellStyle(desktop, phone) {
+  const vars = [`--c: ${desktop.c}`, `--mc: ${phone.c}`];
+  if (desktop.r) {
+    vars.push(`--r: ${desktop.r}`);
+  }
+
+  if (desktop.a) {
+    vars.push(`--a: ${desktop.a}`);
+  }
+
+  if (phone.r) {
+    vars.push(`--mr: ${phone.r}`);
+  }
+
+  if (phone.a) {
+    vars.push(`--ma: ${phone.a}`);
+  }
+
+  return vars.join('; ');
+}
+
+function cellSizes(desktop, phone, phoneColumns) {
+  const phoneVw = Math.round((phone.c / phoneColumns) * 100);
+  const tabletVw = Math.round((desktop.c / 6) * 100);
+  return `(min-width: 1040px) ${DESKTOP_PX[desktop.c]}px, (min-width: 641px) ${tabletVw}vw, ${phoneVw}vw`;
 }
 
 /**
@@ -104,7 +308,7 @@ function resolveImagePath(rawSrc, mdFilePath) {
  * Enhanced figure and gallery processor:
  * 1. Converts standalone Markdown images to <figure> + <figcaption>.
  * 2. Groups consecutive media elements (minConsecutive: 2).
- * 3. Dynamic Bento masonry layout with varied aspect ratios.
+ * 3. Composes flush rows from seeded recipes, shaped around portrait photos.
  * 4. Configurable item limits with a "+N" badge on the last visible tile.
  * 5. Hidden items remain in the DOM so the Lightbox accesses all items.
  */
@@ -112,7 +316,7 @@ export function rehypeFigure(options = {}) {
   const {
     minConsecutive = 2, // 2 consecutive images become a gallery
     defaultLayout = 'bento',
-    defaultLimit = 7, // Bento grid shows 7 items with +N badge if more
+    defaultLimit = 8, // tiles shown before the last one turns into a "+N" badge
     defaultLoop = true,
     defaultThumbnails = true,
   } = options;
@@ -164,7 +368,7 @@ export function rehypeFigure(options = {}) {
 
       const img = figure.children?.find((c) => c.type === 'element' && c.tagName === 'img');
       if (img && img.properties) {
-        // Responsive sizes matching the 920px breakout grid (heroes can span up to 613px-920px)
+        // Hidden tiles keep this; visible tiles get sizes for their own span.
         img.properties.sizes = '(min-width: 1040px) 700px, (min-width: 640px) 60vw, 100vw';
         const rawSrc = img.properties.src;
         const diskPath = resolveImagePath(rawSrc, mdFilePath);
@@ -186,193 +390,56 @@ export function rehypeFigure(options = {}) {
       }
     }
 
-    // Helper to assign per-item responsive sizes matching its specific column span
-    function setItemSizes(figure, desktopSize, mobileSize) {
-      const img = figure?.children?.find((c) => c.type === 'element' && c.tagName === 'img');
-      if (img && img.properties) {
-        img.properties.sizes = `(min-width: 1040px) ${desktopSize}, (min-width: 640px) ${mobileSize}, 100vw`;
-      }
-    }
-
-    // Apply dynamic editorial gallery layout classes and limits to a gallery container
+    // Lay out a gallery's tiles and hide the ones past the limit behind a "+N" tile.
     function applyGalleryLayout(galleryItems, limitConfig, galleryNode) {
       const count = galleryItems.length;
       const isUnlimited = limitConfig === 'all' || limitConfig === 0 || limitConfig === '0';
-      const effectiveLimit = isUnlimited ? count : (Number(limitConfig) > 0 ? Number(limitConfig) : defaultLimit);
+      const limit = Number(limitConfig) > 0 ? Number(limitConfig) : defaultLimit;
+      const visibleCount = isUnlimited ? count : Math.min(count, limit);
+      const visible = galleryItems.slice(0, visibleCount);
 
-      // Deterministic variant based on first item src/alt
-      let hash = 0;
-      const firstSrc =
-        galleryItems[0]?.properties?.src ||
-        galleryItems[0]?.children?.[0]?.properties?.src ||
-        galleryItems[0]?.children?.[0]?.children?.[0]?.properties?.src ||
-        '';
-      for (let i = 0; i < firstSrc.length; i++) {
-        hash = ((hash << 5) - hash) + firstSrc.charCodeAt(i);
-        hash |= 0;
+      const firstImg = visible[0]?.children?.find((c) => c.type === 'element' && c.tagName === 'img');
+      const isPortrait = visible.map((figure) => readAspectRatio(figure) < PORTRAIT_MAX_AR);
+      const namedRecipe = NAMED_RECIPES[galleryNode.properties?.dataLayout];
+      const desktopCells = composeDesktop(isPortrait, hashString(String(firstImg?.properties?.src || '')), namedRecipe);
+      const phone = composePhone(isPortrait);
+
+      if (phone.columns === 3) {
+        ensureClass(galleryNode, 'mob-3col');
       }
 
-      // Check if author explicitly specified layout="..." in shortcode
-      const rawLayout = galleryNode?.properties?.dataLayout;
-      let variant = Math.abs(hash) % 3;
-      if (rawLayout === '2-3-3' || rawLayout === 'top-hero') {
-        variant = 0;
-      } else if (rawLayout === '3-2-3' || rawLayout === 'center-hero') {
-        variant = 1;
-      } else if (rawLayout === '3-3-2' || rawLayout === 'bottom-hero') {
-        variant = 2;
-      }
+      visible.forEach((figure, idx) => {
+        const desktop = desktopCells[idx];
+        const phoneCell = phone.cells[idx];
+        figure.properties.style = `--ar: ${readAspectRatio(figure)}; ${cellStyle(desktop, phoneCell)};`;
 
-      if (galleryNode?.properties) {
-        galleryNode.properties.dataVariant = String(variant);
-        ensureClass(galleryNode, `gallery-variant-${variant}`);
-      }
-      if (count === 2) {
-        galleryItems.forEach((it) => {
-          ensureClass(it, 'col-half');
-          setItemSizes(it, '460px', '50vw');
-        });
-        return;
-      }
-
-      if (count === 3) {
-        ensureClass(galleryItems[0], 'mob-hero');
-        ensureClass(galleryItems[1], 'mob-half');
-        ensureClass(galleryItems[2], 'mob-half');
-
-        const useHero = rawLayout === 'hero' || rawLayout === 'magazine' || (rawLayout !== 'grid' && rawLayout !== 'equal' && variant === 1);
-
-        if (useHero) {
-          // Feature left + 2 stacked right
-          ensureClass(galleryItems[0], 'col-hero-left');
-          ensureClass(galleryItems[1], 'col-stack-right');
-          ensureClass(galleryItems[2], 'col-stack-right');
-          setItemSizes(galleryItems[0], '640px', '60vw');
-          setItemSizes(galleryItems[1], '340px', '40vw');
-          setItemSizes(galleryItems[2], '340px', '40vw');
-        } else {
-          // 3 equal columns
-          galleryItems.forEach((it) => {
-            ensureClass(it, 'col-third');
-            setItemSizes(it, '320px', '33vw');
-          });
-        }
-        return;
-      }
-      if (count === 4) {
-        // 2x2 grid
-        galleryItems.forEach((it) => {
-          ensureClass(it, 'col-half');
-          setItemSizes(it, '460px', '50vw');
-        });
-        return;
-      }
-
-      if (count === 5) {
-        // Mobile: 1 full-width hero on top + 2 pairs below -> tight, flush square block
-        ensureClass(galleryItems[0], 'mob-hero');
-        setItemSizes(galleryItems[0], '460px', '100vw');
-        ensureClass(galleryItems[1], 'mob-half');
-        setItemSizes(galleryItems[1], '460px', '50vw');
-        for (let i = 2; i < 5; i++) {
-          ensureClass(galleryItems[i], 'mob-half');
-          ensureClass(galleryItems[i], 'col-third');
-          setItemSizes(galleryItems[i], '310px', '50vw');
-        }
-
-        // Desktop: 2 on top (50% each), 3 on bottom (33.3% each)
-        ensureClass(galleryItems[0], 'col-half');
-        ensureClass(galleryItems[1], 'col-half');
-        return;
-      }
-      if (count === 6) {
-        // 2 rows of 3
-        galleryItems.forEach((it) => {
-          ensureClass(it, 'col-third');
-          setItemSizes(it, '310px', '33vw');
-        });
-        return;
-      }
-
-      // For 7+ items (e.g. 8 items with limit)
-      // 3 distinct flush editorial compositions that fill every row completely:
-      // Variant 0 ("Editorial 2-3-3"): Row 1 (two 50% photos), Row 2 (three 33% photos), Row 3 (three 33% photos)
-      // Variant 1 ("Editorial 3-2-3"): Row 1 (three 33% photos), Row 2 (two 50% photos), Row 3 (three 33% photos)
-      // Variant 2 ("Editorial 3-3-2"): Row 1 (three 33% photos), Row 2 (three 33% photos), Row 3 (two 50% photos)
-      const visibleCount = (!isUnlimited && count > effectiveLimit) ? effectiveLimit : count;
-
-      const patterns = visibleCount === 7
-        ? [
-            // 7 items: 2 + 2 + 3 = 7
-            ['col-half', 'col-half', 'col-half', 'col-half', 'col-third', 'col-third', 'col-third'],
-            // 7 items: 3 + 2 + 2 = 7
-            ['col-third', 'col-third', 'col-third', 'col-half', 'col-half', 'col-half', 'col-half'],
-            // 7 items: 2 + 3 + 2 = 7
-            ['col-half', 'col-half', 'col-third', 'col-third', 'col-third', 'col-half', 'col-half'],
-          ]
-        : [
-            // Variant 0: 2-3-3
-            ['col-half', 'col-half', 'col-third', 'col-third', 'col-third', 'col-third', 'col-third', 'col-third'],
-            // Variant 1: 3-2-3
-            ['col-third', 'col-third', 'col-third', 'col-half', 'col-half', 'col-third', 'col-third', 'col-third'],
-            // Variant 2: 3-3-2
-            ['col-third', 'col-third', 'col-third', 'col-third', 'col-third', 'col-third', 'col-half', 'col-half'],
-          ];
-
-      const currentPattern = patterns[variant % patterns.length];
-      if (visibleCount === 7) {
-        ensureClass(galleryItems[0], 'mob-hero');
-        for (let i = 1; i < 7; i++) {
-          galleryItems[i] && ensureClass(galleryItems[i], 'mob-half');
-        }
-      } else if (visibleCount >= 8) {
-        if (galleryNode?.properties) {
-          ensureClass(galleryNode, 'has-mob-3col');
-        }
-        ensureClass(galleryItems[0], 'mob-hero-3col');
-        ensureClass(galleryItems[1], 'mob-square-3col');
-        ensureClass(galleryItems[2], 'mob-square-3col');
-        ensureClass(galleryItems[3], 'mob-square-3col');
-        ensureClass(galleryItems[4], 'mob-square-3col');
-        ensureClass(galleryItems[5], 'mob-square-3col');
-        ensureClass(galleryItems[6], 'mob-wide-3col');
-        ensureClass(galleryItems[7], 'mob-square-3col');
-      }
-      galleryItems.forEach((it, idx) => {
-        if (idx < visibleCount) {
-          const patternClass = currentPattern[idx % currentPattern.length];
-          ensureClass(it, patternClass);
-          if (patternClass === 'col-half' || patternClass === 'bento-large' || patternClass === 'bento-wide') {
-            setItemSizes(it, '460px', '50vw');
-          } else {
-            setItemSizes(it, '310px', '33vw');
-          }
-          if (!isUnlimited && count > effectiveLimit && idx === effectiveLimit - 1) {
-            const remaining = count - effectiveLimit;
-            it.children.push({
-              type: 'element',
-              tagName: 'div',
-              properties: {
-                className: ['gallery-more-badge'],
-                ariaLabel: `${remaining} foto lainnya`,
-              },
-              children: [
-                {
-                  type: 'element',
-                  tagName: 'span',
-                  properties: {},
-                  children: [{ type: 'text', value: `+${remaining}` }],
-                },
-              ],
-            });
-          }
-        } else {
-          // Hidden item: keeps in DOM for Lightbox to read, but hidden from the page layout
-          ensureClass(it, 'hidden-gallery-item');
-          if (!it.properties) it.properties = {};
-          it.properties.style = `${it.properties.style || ''} display: none !important;`;
+        const img = figure.children?.find((c) => c.type === 'element' && c.tagName === 'img');
+        if (img) {
+          img.properties.sizes = cellSizes(desktop, phoneCell, phone.columns);
         }
       });
+
+      if (visibleCount < count) {
+        visible[visibleCount - 1].children.push({
+          type: 'element',
+          tagName: 'div',
+          properties: {
+            className: ['gallery-more-badge'],
+            ariaLabel: `${count - visibleCount} foto lainnya`,
+          },
+          children: [
+            {
+              type: 'element',
+              tagName: 'span',
+              properties: {},
+              children: [{ type: 'text', value: `+${count - visibleCount}` }],
+            },
+          ],
+        });
+      }
+
+      // Hidden tiles stay in the DOM so the lightbox can still page through them.
+      galleryItems.slice(visibleCount).forEach((figure) => ensureClass(figure, 'hidden-gallery-item'));
     }
 
     // Phase 2: Format existing .media-gallery children (e.g. from shortcode)
@@ -402,7 +469,7 @@ export function rehypeFigure(options = {}) {
           newGalleryChildren.push({
             type: 'element',
             tagName: 'figure',
-            properties: { className: ['gallery-item', 'bento-square'], style: '--ar: 1.777;' },
+            properties: { className: ['gallery-item'], style: '--ar: 1.777;' },
             children: [child, createVideoBadge()],
           });
         } else {
@@ -462,7 +529,7 @@ export function rehypeFigure(options = {}) {
               galleryItems.push({
                 type: 'element',
                 tagName: 'figure',
-                properties: { className: ['gallery-item', 'bento-square'], style: '--ar: 1.777;' },
+                properties: { className: ['gallery-item'], style: '--ar: 1.777;' },
                 children: [item, createVideoBadge()],
               });
             } else {

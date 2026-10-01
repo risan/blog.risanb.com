@@ -2,7 +2,7 @@
    blog.risanb.com — "Personal Journal" (Catatan Perjalanan & Refleksi)
    An expressive, warm, tactile journal aesthetic: sand linen background,
    warm coffee ink, Fraunces display serif, Lora body, Caveat handwritten accents,
-   terracotta accents, and deep ocean footer.
+   terracotta accents, and a dark espresso footer.
    ========================================================================== */
 
 /* Self-hosted variable & web fonts. No third-party CDN requests, no FOIT. */
@@ -25,8 +25,7 @@
   --color-rule: #e9dcc7;
   --color-terra: #b4552d;
   --color-terra-soft: #d98a66;
-  --color-ocean: #1c4c57;
-  --color-ocean-dark: #14373f;
+  --color-espresso: #2b211b;
 
   --font-disp: 'Fraunces Variable', 'Fraunces', Georgia, serif;
   --font-body: 'Lora Variable', 'Lora', Georgia, serif;
@@ -45,8 +44,7 @@
   --rule: #e9dcc7;
   --terra: #b4552d;
   --terra-soft: #d98a66;
-  --ocean: #1c4c57;
-  --ocean-dark: #14373f;
+  --espresso: #2b211b;
 
   /* Compatibility aliases for SearchModal and shared utilities */
   --paper: var(--sand);
@@ -143,10 +141,44 @@ a:hover {
 
 header.masthead {
   background: var(--sand);
-  padding: 36px 0 0;
+  padding: 34px 0 0;
   text-align: center;
   position: relative;
   z-index: 30;
+}
+
+/* Map contours behind the name, fading out before the nav row. */
+header.masthead::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/img/contours.svg') center top / cover no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 78%);
+  mask-image: linear-gradient(to bottom, #000 45%, transparent 78%);
+  pointer-events: none;
+}
+
+header.masthead > .shell {
+  position: relative;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  display: block;
+  transform: rotate(-4deg);
+  transition: transform 0.25s ease;
+}
+
+.brand:hover .brand-mark {
+  transform: rotate(0deg);
 }
 
 .wordmark {
@@ -160,13 +192,14 @@ header.masthead {
   display: inline-block;
   line-height: 1;
 }
-.wordmark:hover {
+.brand:hover .wordmark {
   color: var(--terra);
 }
 
 .tagline {
   font-family: var(--font-hand);
   font-size: 1.375rem;
+  line-height: 1.2;
   color: var(--terra);
   margin-top: 6px;
   transform: rotate(-1.2deg);
@@ -174,7 +207,7 @@ header.masthead {
 }
 
 nav.journal {
-  margin-top: 24px;
+  margin-top: 20px;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
   padding: 14px 0;
@@ -225,6 +258,16 @@ nav.journal a:hover {
   align-items: center;
   gap: 6px;
   transition: all 0.15s ease;
+}
+.journal-search-btn kbd {
+  font-family: inherit;
+  font-size: 0.625rem;
+  opacity: 0.75;
+}
+@media (hover: none) {
+  .journal-search-btn kbd {
+    display: none;
+  }
 }
 .journal-search-btn:hover {
   color: var(--ink);
@@ -447,7 +490,7 @@ nav.journal a:hover {
   font-style: italic;
   font-size: 1.625rem;
   line-height: 1.38;
-  color: var(--ocean);
+  color: var(--terra);
   margin: 0;
   font-variation-settings: 'SOFT' 40, 'WONK' 1;
 }
@@ -574,143 +617,128 @@ nav.journal a:hover {
   margin-bottom: 44px !important;
 }
 
-/* Scoped gallery container - Dynamic Editorial Layout */
+/* Gallery grid. rehype-figure composes the rows and writes each tile's spans
+   as custom properties: --c / --r for desktop columns and rows, --mc / --mr on
+   phones. One tile per row also carries --a / --ma, the aspect ratio that sets
+   the row's height; every other tile stretches to fill it, so rows stay flush. */
 .journal-content .media-gallery {
   display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
   margin-top: 48px !important;
   margin-bottom: 48px !important;
-  grid-template-columns: repeat(6, 1fr);
-  box-sizing: border-box;
 }
 
-.journal-content .media-gallery::after {
-  display: none !important;
-}
-
-/* Base gallery item */
-.journal-content .media-gallery figure,
 .journal-content .media-gallery .gallery-item {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: none !important;
-  border-radius: 4px !important;
-  overflow: hidden !important;
-  margin: 0 !important;
-  background: var(--sand-2);
-  box-shadow: 0 2px 8px rgba(42, 31, 23, 0.08) !important;
-  cursor: zoom-in;
+  grid-column: span var(--c, 2);
+  grid-row: span var(--r, 1);
+  aspect-ratio: var(--a, auto);
   position: relative;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--sand-2);
+  box-shadow: 0 2px 8px rgba(42, 31, 23, 0.08);
+  cursor: zoom-in;
   transition: box-shadow 0.3s ease;
-  flex: none !important;
 }
 
-.journal-content .media-gallery figure:hover,
 .journal-content .media-gallery .gallery-item:hover {
-  box-shadow: 0 10px 28px rgba(42, 31, 23, 0.16) !important;
+  box-shadow: 0 10px 28px rgba(42, 31, 23, 0.16);
   z-index: 2;
 }
-/* Item Spanning & Photographic Aspect Ratios */
-.journal-content .media-gallery .col-half {
-  grid-column: span 3;
-  aspect-ratio: 16 / 10;
-}
 
-.journal-content .media-gallery .col-third {
-  grid-column: span 2;
-  aspect-ratio: 4 / 3;
-}
-
-.journal-content .media-gallery .col-hero-left {
-  grid-column: span 4;
-  grid-row: span 2;
-  aspect-ratio: 1 / 1;
-}
-
-.journal-content .media-gallery .col-stack-right {
-  grid-column: span 2;
-  grid-row: span 1;
-  aspect-ratio: 16 / 10;
-}
-
-.journal-content .media-gallery .bento-large {
-  grid-column: span 3;
-  grid-row: span 2;
-  aspect-ratio: 1 / 1;
-}
-
-.journal-content .media-gallery .bento-wide {
-  grid-column: span 3;
-  aspect-ratio: 16 / 9;
-}
-
-.journal-content .media-gallery .bento-square {
-  grid-column: span 2;
-  aspect-ratio: 4 / 3;
-}
-
-/* Explicit Count Layouts */
-.journal-content .media-gallery[data-count="2"] {
-  grid-template-columns: repeat(2, 1fr);
-}
-.journal-content .media-gallery[data-count="2"] figure,
-.journal-content .media-gallery[data-count="2"] .gallery-item {
-  grid-column: span 1 !important;
-  aspect-ratio: 4 / 3 !important;
-}
-
-.journal-content .media-gallery[data-count="3"]:not(.gallery-variant-1) {
-  grid-template-columns: repeat(3, 1fr);
-}
-.journal-content .media-gallery[data-count="3"]:not(.gallery-variant-1) figure,
-.journal-content .media-gallery[data-count="3"]:not(.gallery-variant-1) .gallery-item {
-  grid-column: span 1 !important;
-  aspect-ratio: 4 / 3 !important;
-}
-
-.journal-content .media-gallery[data-count="4"] {
-  grid-template-columns: repeat(2, 1fr);
-}
-.journal-content .media-gallery[data-count="4"] figure,
-.journal-content .media-gallery[data-count="4"] .gallery-item {
-  grid-column: span 1 !important;
-  aspect-ratio: 4 / 3 !important;
-}
-
-/* 5-item desktop layout (2 on row 1, 3 on row 2) -> flush rectangle */
-.journal-content .media-gallery[data-count="5"] {
-  grid-template-columns: repeat(6, 1fr);
-}
-.journal-content .media-gallery[data-count="5"] figure:nth-child(1),
-.journal-content .media-gallery[data-count="5"] figure:nth-child(2),
-.journal-content .media-gallery[data-count="5"] .gallery-item:nth-child(1),
-.journal-content .media-gallery[data-count="5"] .gallery-item:nth-child(2) {
-  grid-column: span 3 !important;
-  aspect-ratio: 16 / 10 !important;
-}
-.journal-content .media-gallery[data-count="5"] figure:nth-child(n+3),
-.journal-content .media-gallery[data-count="5"] .gallery-item:nth-child(n+3) {
-  grid-column: span 2 !important;
-  aspect-ratio: 4 / 3 !important;
-}
-/* Hidden items (available to Lightbox but visually hidden from layout) */
 .journal-content .media-gallery .hidden-gallery-item {
-  display: none !important;
+  display: none;
 }
 
-/* More Badge Overlay (+N) */
+/* Media is taken out of flow so only the row's lead tile decides its height. */
+.journal-content .media-gallery .gallery-item > img,
+.journal-content .media-gallery .gallery-item > video,
+.journal-content .media-gallery .gallery-item > .embed {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.journal-content .media-gallery .gallery-item > img {
+  transform: translate3d(0, 0, 0) scale(1);
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease;
+}
+
+.journal-content .media-gallery .gallery-item:hover > img {
+  transform: translate3d(0, 0, 0) scale(1.05);
+  filter: brightness(1.02);
+}
+
+.journal-content .media-gallery .embed iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* Caption: hidden at rest, slides into a dark scrim on hover. Two lines max;
+   the lightbox shows the full text. */
+.journal-content .media-gallery .gallery-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  margin: 0;
+  padding: 36px 14px 11px;
+  background: linear-gradient(180deg, rgba(20, 15, 11, 0) 0%, rgba(20, 15, 11, 0.62) 45%, rgba(20, 15, 11, 0.86) 100%);
+  color: #fffaf2;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 450;
+  line-height: 1.45;
+  letter-spacing: 0.005em;
+  text-align: left;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+@media (hover: hover) {
+  .journal-content .media-gallery .gallery-item:hover .gallery-caption {
+    opacity: 1;
+  }
+}
+
+.journal-content .media-gallery .gallery-item:has(.gallery-more-badge) .gallery-caption {
+  display: none;
+}
+
+/* "+N" tile */
 .journal-content .media-gallery .gallery-more-badge {
   position: absolute;
   inset: 0;
-  background: rgba(15, 12, 10, 0.65);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 5;
+  background: rgba(15, 12, 10, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   transition: background 0.2s ease;
-  cursor: pointer;
 }
 
 .journal-content .media-gallery .gallery-item:hover .gallery-more-badge {
@@ -718,74 +746,19 @@ nav.journal a:hover {
 }
 
 .journal-content .media-gallery .gallery-more-badge span {
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: clamp(1.75rem, 3.5vw, 2.35rem);
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.02em;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s ease;
 }
 
-.journal-content .media-gallery .gallery-item:hover .gallery-more-badge span {
-  transform: scale(1.08);
-}
-
-/* Image inside gallery item: fill container cleanly */
-.journal-content .media-gallery figure img,
-.journal-content .media-gallery .gallery-item img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  border-radius: 4px !important;
-  display: block;
-  box-shadow: none !important;
-  transform: translate3d(0, 0, 0) scale(1);
-  backface-visibility: hidden;
-  will-change: transform;
-  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease;
-}
-
-.journal-content .media-gallery figure:hover img,
-.journal-content .media-gallery .gallery-item:hover img {
-  transform: translate3d(0, 0, 0) scale(1.05);
-  filter: brightness(1.02);
-}
-.journal-content .media-gallery figure video,
-.journal-content .media-gallery .gallery-item video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  border-radius: 4px !important;
-  display: block;
-}
-
-.journal-content .media-gallery .embed {
-  margin: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: 4px !important;
-  box-shadow: none !important;
-}
-
-.journal-content .media-gallery .embed iframe {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
-  pointer-events: none;
-}
-
-/* Gallery thumbnails in the article do NOT show caption overlays on hover */
-.journal-content .media-gallery figure figcaption,
-.journal-content .media-gallery .gallery-caption {
-  display: none !important;
-}
-
-/* Video badge overlay */
 .journal-content .media-gallery .gallery-video-badge {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 4;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -797,14 +770,11 @@ nav.journal a:hover {
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   pointer-events: none;
-  z-index: 4;
 }
 
-/* Overall gallery caption / credit */
-.media-gallery-caption,
 .journal-content .media-gallery .media-gallery-caption {
   grid-column: 1 / -1;
-  font-family: var(--font-sans), system-ui, sans-serif !important;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 0.875rem;
   color: var(--muted);
   text-align: center;
@@ -812,10 +782,8 @@ nav.journal a:hover {
   line-height: 1.4;
 }
 
-/* Mobile: Dynamic Bento Masonry (3 columns, 105px rows) */
-/* Mobile: Dynamic Responsive Breakout & Layouts */
 @media (max-width: 640px) {
-  /* Breakout on mobile: wider than text paragraphs (extends 12px into the 18px padding on each side) */
+  /* Breakout on mobile: 12px wider than the text on each side */
   .journal-content > figure,
   .journal-content > .media-gallery,
   .journal-content .media-gallery,
@@ -828,94 +796,26 @@ nav.journal a:hover {
     max-width: none !important;
   }
 
-  /* Default mobile 2-column grid */
   .journal-content .media-gallery {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
     margin-top: 36px !important;
     margin-bottom: 36px !important;
   }
 
-  .journal-content .media-gallery figure,
+  .journal-content .media-gallery.mob-3col {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
   .journal-content .media-gallery .gallery-item {
-    border-radius: 4px !important;
-    box-shadow: none !important;
-    grid-column: span 1 !important;
-    grid-row: span 1 !important;
-    aspect-ratio: 4 / 3 !important;
-  }
-
-  .journal-content .media-gallery figure img,
-  .journal-content .media-gallery .gallery-item img {
-    border-radius: 4px !important;
-  }
-
-  /* 2-column mobile hero: spans full width */
-  .journal-content .media-gallery .mob-hero {
-    grid-column: span 2 !important;
-    aspect-ratio: 16 / 10 !important;
-  }
-
-  .journal-content .media-gallery .mob-half {
-    grid-column: span 1 !important;
-    aspect-ratio: 4 / 3 !important;
-  }
-
-  /* 5-item mobile layout (Image #2): 1 full-width hero on top + 2 pairs below -> tight, flush square block */
-  .journal-content .media-gallery[data-count="5"] {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .journal-content .media-gallery[data-count="5"] figure:nth-child(1),
-  .journal-content .media-gallery[data-count="5"] .gallery-item:nth-child(1) {
-    grid-column: span 2 !important;
-    aspect-ratio: 16 / 10 !important;
-  }
-  .journal-content .media-gallery[data-count="5"] figure:nth-child(n+2),
-  .journal-content .media-gallery[data-count="5"] .gallery-item:nth-child(n+2) {
-    grid-column: span 1 !important;
-    aspect-ratio: 4 / 3 !important;
-  }
-
-  /* 3-item mobile layout: 1 full-width hero on top + 1 pair below */
-  .journal-content .media-gallery[data-count="3"] {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .journal-content .media-gallery[data-count="3"] figure:nth-child(1),
-  .journal-content .media-gallery[data-count="3"] .gallery-item:nth-child(1) {
-    grid-column: span 2 !important;
-    aspect-ratio: 16 / 10 !important;
-  }
-  .journal-content .media-gallery[data-count="3"] figure:nth-child(n+2),
-  .journal-content .media-gallery[data-count="3"] .gallery-item:nth-child(n+2) {
-    grid-column: span 1 !important;
-    aspect-ratio: 4 / 3 !important;
-  }
-
-  /* 8-item mobile Bento layout (Image #1): dynamic 3-column grid (Apple/Google Photos style) */
-  .journal-content .media-gallery.has-mob-3col,
-  .journal-content .media-gallery:has(.mob-hero-3col) {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 4px !important;
-  }
-
-  .journal-content .media-gallery .mob-hero-3col {
-    grid-column: span 2 !important;
-    grid-row: span 2 !important;
-    aspect-ratio: 1 / 1 !important;
-  }
-
-  .journal-content .media-gallery .mob-square-3col {
-    grid-column: span 1 !important;
-    grid-row: span 1 !important;
-    aspect-ratio: 1 / 1 !important;
-  }
-
-  .journal-content .media-gallery .mob-wide-3col {
-    grid-column: span 2 !important;
-    grid-row: span 1 !important;
-    aspect-ratio: 2 / 1 !important;
+    grid-column: span var(--mc, 1);
+    grid-row: span var(--mr, 1);
+    aspect-ratio: var(--ma, auto);
+    box-shadow: none;
   }
 }
+
 /* Handwritten signature signoff */
 .signoff {
   margin-top: 64px;
@@ -938,7 +838,7 @@ nav.journal a:hover {
 
 /* Author card */
 .author-card {
-  margin: 56px 0 0;
+  margin: 64px 0 0;
   background: var(--card);
   border: 1px solid var(--rule);
   border-radius: 20px;
@@ -955,12 +855,14 @@ nav.journal a:hover {
   flex-shrink: 0;
   border: 3px solid var(--sand-2);
 }
-.author-card h3 {
-  font-family: var(--font-disp);
-  font-weight: 600;
-  font-size: 1.25rem;
-  margin: 0 0 6px;
-  letter-spacing: -0.02em;
+.author-card .sig {
+  display: inline-block;
+  font-family: var(--font-hand);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--terra);
+  transform: rotate(-2deg);
+  margin-bottom: 8px;
 }
 .author-card p {
   margin: 0;
@@ -993,16 +895,16 @@ nav.journal a:hover {
 .tags-pills a {
   font-size: 0.8125rem;
   text-decoration: none;
-  color: var(--ocean);
-  background: rgba(28, 76, 87, 0.07);
-  border: 1px solid rgba(28, 76, 87, 0.16);
+  color: var(--ink);
+  background: var(--sand-2);
+  border: 1px solid var(--rule);
   padding: 4px 13px;
   border-radius: 100px;
   transition: all 0.15s ease;
 }
 .tags-pills a:hover {
-  background: rgba(28, 76, 87, 0.14);
-  color: var(--ink);
+  border-color: var(--terra-soft);
+  color: var(--terra);
 }
 /* Tag Cloud & Tag Pills */
 .tag-cloud {
@@ -1244,25 +1146,6 @@ nav.journal a:hover {
 .entries a.no-thumb {
   grid-template-columns: 1fr;
 }
-.entries .thumb {
-  aspect-ratio: 4 / 3;
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--sand-2);
-}
-.entries .thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transform: translate3d(0, 0, 0) scale(1);
-  backface-visibility: hidden;
-  will-change: transform;
-  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.entries a:hover .thumb img {
-  transform: translate3d(0, 0, 0) scale(1.06);
-}
 .entries h4 {
   font-family: var(--font-disp);
   font-weight: 600;
@@ -1293,12 +1176,160 @@ nav.journal a:hover {
   margin-top: 8px;
 }
 
+/* Compact post list: square thumbnail, one-line title, two-line excerpt.
+   Shared by the home page, category pages and tag pages. */
+.post-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.post-list li {
+  border-bottom: 1px solid var(--rule);
+}
+
+.post-list--two-col {
+  margin-top: 40px;
+}
+
+@media (min-width: 900px) {
+  .post-list--two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 48px;
+  }
+}
+
+.post-card {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.post-card-thumb {
+  width: 88px;
+  height: 88px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--sand-2);
+  border: 1px solid var(--rule);
+  transition: border-color 0.2s ease;
+}
+
+/* No scale on hover: resampling a small thumbnail mid-transition is what
+   made it go sharp, blurry, then sharp again. */
+.post-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: filter 0.25s ease;
+}
+
+.post-card-initial {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-disp);
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: var(--terra-soft);
+  font-variation-settings: 'SOFT' 50, 'WONK' 1;
+}
+
+.post-card:hover .post-card-thumb {
+  border-color: var(--terra-soft);
+}
+
+.post-card:hover .post-card-thumb img {
+  filter: brightness(1.06) saturate(1.08);
+}
+
+.post-card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.post-card-title {
+  font-family: var(--font-disp);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  font-variation-settings: 'SOFT' 30, 'WONK' 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease;
+}
+
+.post-card:hover .post-card-title {
+  color: var(--terra);
+}
+
+.post-card-excerpt {
+  font-size: 0.84375rem;
+  line-height: 1.45;
+  color: var(--muted);
+  margin-top: 5px;
+  height: 2.9em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.post-card-meta {
+  font-size: 0.71875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--terra-soft);
+  margin-top: 5px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .post-card {
+    grid-template-columns: 76px 1fr;
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .post-card-thumb {
+    width: 76px;
+    height: 76px;
+  }
+
+  .post-card-title {
+    font-size: 0.96875rem;
+  }
+}
+
 /* Photo strip */
 .strip {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  gap: 14px;
   margin-top: 24px;
+}
+/* Five photos: the newest takes a 2×2 tile, four squares beside it. */
+.strip:has(> a:nth-child(5):last-child) {
+  grid-template-columns: repeat(4, 1fr);
+}
+.strip:has(> a:nth-child(5):last-child) > a:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
 }
 .strip a {
   display: block;
@@ -1475,54 +1506,74 @@ nav.journal a:hover {
 
 /* ------------------------------------------------------------- footer --- */
 
-footer.ocean {
+footer.site-footer {
   margin-top: 96px;
-  background: var(--ocean);
-  color: #e8dcc9;
-  padding: 56px 0 48px;
+  background: var(--espresso);
+  color: #d9cbb6;
+  padding: 44px 0 28px;
 }
-footer.ocean .inner {
-  max-width: 1080px;
+footer.site-footer .inner {
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 0 32px;
-  text-align: center;
+  padding: 0 clamp(20px, 4.5vw, 40px);
 }
-footer.ocean .wordmark {
-  color: #fdf8f0;
-  font-size: 1.875rem;
+.footer-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
-footer.ocean .tagline {
+.footer-mark img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  transform: rotate(-4deg);
+}
+.footer-note {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+  line-height: 1.2;
   color: var(--terra-soft);
-  font-size: 1.1875rem;
 }
-footer.ocean nav {
-  margin-top: 24px;
+footer.site-footer nav {
   display: flex;
   gap: 26px;
-  justify-content: center;
-  flex-wrap: wrap;
 }
-footer.ocean nav a {
-  color: #c9bca6;
+footer.site-footer a {
+  color: #d9cbb6;
   text-decoration: none;
   font-size: 0.875rem;
   letter-spacing: 0.04em;
 }
-footer.ocean nav a:hover {
+footer.site-footer a:hover {
   color: #fdf8f0;
 }
-footer.ocean .fine {
-  margin-top: 32px;
-  padding-top: 22px;
-  border-top: 1px solid rgba(232, 220, 201, 0.18);
+footer.site-footer .fine {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(232, 220, 201, 0.14);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
   font-size: 0.8125rem;
-  color: #9faeaf;
+  color: #a39380;
 }
-footer.ocean .fine a {
-  color: #c9bca6;
+footer.site-footer .fine a {
+  font-size: 0.8125rem;
+  color: #a39380;
 }
-footer.ocean .fine a:hover {
-  color: #fdf8f0;
+@media (max-width: 640px) {
+  .footer-main {
+    flex-direction: column;
+    text-align: center;
+    gap: 14px;
+  }
+  footer.site-footer .fine {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
 /* ---------------------------------------------------------------- 404 --- */
@@ -1576,20 +1627,10 @@ footer.ocean .fine a:hover {
   .featured p {
     display: none;
   }
-  .entries a {
-    grid-template-columns: 100px 1fr;
-    gap: 16px;
-    padding: 18px 0;
-  }
-  .entries h4 {
-    font-size: 1.1875rem;
-  }
-  .entries p {
-    display: none;
-  }
-  .strip {
+  .strip,
+  .strip:has(> a:nth-child(5):last-child) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
   .teaser {
     flex-direction: column;
@@ -1612,9 +1653,6 @@ footer.ocean .fine a:hover {
     padding: 0 20px;
     bottom: 32px;
   }
-  footer.ocean .inner {
-    padding: 0 20px;
-  }
 }
 
 @media (max-width: 560px) {
@@ -1624,15 +1662,6 @@ footer.ocean .fine a:hover {
   nav.journal a {
     font-size: 0.8125rem;
   }
-  .strip {
-    grid-template-columns: 1fr;
-  }
-  .entries a {
-    grid-template-columns: 1fr;
-  }
-  .entries .thumb {
-    max-height: 180px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1640,8 +1669,8 @@ footer.ocean .fine a:hover {
     scroll-behavior: auto;
   }
   .featured img,
-  .entries .thumb img,
-  .strip img {
+  .strip img,
+  .journal-content .media-gallery .gallery-item > img {
     transition: none;
   }
 }

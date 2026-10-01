@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getImage } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import { toPlainText } from '../lib/plain-text';
 
@@ -13,27 +14,42 @@ import { toPlainText } from '../lib/plain-text';
  * `text` is the flattened body. Fields are kept as separate arrays/strings
  * rather than one blob so MiniSearch can boost title and tags above body prose.
  */
+const CATEGORY_LABELS: Record<string, string> = {
+  travel: 'Perjalanan',
+  writing: 'Tulisan',
+  journal: 'Catatan',
+  photos: 'Foto',
+};
+
 export const GET: APIRoute = async () => {
   const posts = await getCollection('blog');
 
-  const index = posts
-    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-    .map((post) => {
+  const sorted = posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+  const index = await Promise.all(
+    sorted.map(async (post) => {
       // Same normalisation as src/pages/code/[...slug].astro — a bundle
       // directory ('foo/index') and a flat file ('foo') share one URL.
       const slug = post.id.replace(/\/index$/, '');
+      const [cover] = post.data.images;
+      const thumb = cover
+        ? (await getImage({ src: cover, width: 96, height: 96, fit: 'cover', format: 'webp' })).src
+        : undefined;
+      const [firstCategory] = post.data.categories;
 
       return {
         id: slug,
-        url: `/${slug}/`,
-        title: post.data.title,
-        description: post.data.description ?? '',
+        title: post.data.title.normalize('NFC'),
+        description: (post.data.description ?? '').normalize('NFC'),
         date: post.data.date.toISOString().slice(0, 10),
         tags: post.data.tags,
-        categories: post.data.categories,
-        text: toPlainText(post.body ?? ''),
+        category: firstCategory ? (CATEGORY_LABELS[firstCategory] ?? firstCategory) : '',
+        thumb,
+        // NFC so a decomposed "o + ¨" folds like a precomposed "ö" in the modal.
+        text: toPlainText(post.body ?? '').normalize('NFC'),
       };
-    });
+    }),
+  );
 
   return new Response(JSON.stringify(index), {
     headers: {
