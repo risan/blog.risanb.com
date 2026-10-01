@@ -17,7 +17,7 @@ import { monographLight } from './src/lib/shiki-monograph.mjs';
 //
 //   publicDir: 'static'   Hugo's static/ and Astro's public/ mean the same
 //                         thing; reusing the name keeps the existing
-//                         /favicon.svg style paths working.
+//                         /favicon.png style paths working.
 //   outDir: 'dist'        not Hugo's public/, so old and new builds never
 //                         clobber each other during a migration.
 export default defineConfig({

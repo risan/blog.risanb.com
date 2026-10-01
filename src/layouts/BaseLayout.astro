@@ -2,6 +2,9 @@
 import '../styles/global.css';
 import SearchModal from '../components/SearchModal.vue';
 import MediaLightbox from '../components/MediaLightbox.vue';
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.webp';
+import logoFooter from '../assets/logo-footer.webp';
 
 interface Props {
   title: string;
@@ -67,7 +70,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
       title="Risan Bagja"
       href={new URL('/rss.xml', Astro.site)}
     />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="theme-color" content="#fbf6ed" />
 
@@ -79,7 +82,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <header class="masthead">
       <div class="shell">
         <a class="brand" href="/">
-          <img class="brand-mark" src="/logo.svg" width="60" height="60" alt="" />
+          <Image class="brand-mark" src={logo} width={120} layout="fixed" loading="eager" alt="" />
           <span class="wordmark">Risan Bagja</span>
         </a>
         <span class="tagline">Dari peron ke peron</span>
@@ -132,7 +135,7 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
       <div class="inner">
         <div class="footer-main">
           <a class="footer-mark" href="/" aria-label="Beranda">
-            <img src="/logo.svg" width="48" height="48" alt="" />
+            <Image src={logoFooter} width={96} layout="fixed" alt="" />
           </a>
           <p class="footer-note">Perjalanan berikutnya sedang disiapkan.</p>
           <nav aria-label="Tautan Terkait">
