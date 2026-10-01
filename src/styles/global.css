@@ -170,14 +170,9 @@ header.masthead > .shell {
 }
 
 .brand-mark {
-  width: 60px;
-  height: 60px;
+  width: 120px;
+  height: auto;
   display: block;
-  transition: transform 0.35s ease;
-}
-
-.brand:hover .brand-mark {
-  transform: rotate(-6deg);
 }
 
 .wordmark {
@@ -680,7 +675,7 @@ nav.journal a:hover {
 }
 
 /* No will-change or translate3d: they pin the layer at its resting raster
-   scale. Sharpness comes from the 1.5x `sizes` set in rehype-figure. */
+   scale, so the zoomed tile stays soft after the transition ends. */
 .journal-content .media-gallery .gallery-item > img {
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.3s ease;
 }
@@ -1536,8 +1531,8 @@ footer.site-footer .inner {
 }
 .footer-mark img {
   display: block;
-  width: 48px;
-  height: 48px;
+  width: 96px;
+  height: auto;
 }
 .footer-note {
   flex: 1;
@@ -1631,8 +1626,7 @@ footer.site-footer .fine a {
     font-size: 2rem;
   }
   .brand-mark {
-    width: 48px;
-    height: 48px;
+    width: 88px;
   }
 
   .featured .ph {

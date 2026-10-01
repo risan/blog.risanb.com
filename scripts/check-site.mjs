@@ -26,7 +26,7 @@ const REQUIRED = [
   'tags/index.html',
   'rss.xml',
   'sitemap-index.xml',
-  'favicon.svg',
+  'favicon.png',
   'search.json',
   'robots.txt',
   '_redirects',
