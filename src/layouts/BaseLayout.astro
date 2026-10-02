@@ -79,7 +79,7 @@ const clouds = [
 });
 
 // The footer scene is layered on the valley's canvas (2172x724): the valley, the train
-// on the bridge deck, then the front band (railing, poles, trees) cropped from y 300 of
+// on the bridge deck, then the front band (railing, poles, trees) cropped from y 278 of
 // the same canvas, so the train runs behind it. Numbers are canvas pixels.
 const SCENE_WIDTHS = [640, 960, 1280, 1600, footerValley.width];
 const sceneRail = 482;
@@ -89,7 +89,7 @@ const sceneTrainStyle = [
   `top: ${((sceneRail - sceneTrainHeight) / footerValley.height) * 100}%`,
   `width: ${(sceneTrainWidth / footerValley.width) * 100}%`,
 ].join('; ');
-const sceneFrontStyle = `top: ${(300 / footerValley.height) * 100}%`;
+const sceneFrontStyle = `top: ${(278 / footerValley.height) * 100}%`;
 ---
 
 <!doctype html>
