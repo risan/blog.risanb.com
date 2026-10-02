@@ -9,6 +9,7 @@ import cloudHigh from '../assets/eiger/cloud-1.webp';
 import cloudLow from '../assets/eiger/cloud-2.webp';
 import cloudRight from '../assets/eiger/cloud-3.webp';
 import logoFooter from '../assets/logo-footer.webp';
+import footerPanorama from '../assets/footer-panorama.webp';
 
 interface Props {
   title: string;
@@ -45,11 +46,13 @@ const nav = [
   { href: '/tentang/', label: 'Tentang' },
 ] as const;
 const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
+const RAILCAR_SOUND_SOURCE =
+  'https://commons.wikimedia.org/wiki/File:BDhe_4-4_%26_Bt_122_at_Lauterbrunnen_station.webm';
 
 // The header logo is layered on one canvas (the scene's size): sky strokes, the still
 // scene, then the train. Each cloud drifts across the whole canvas, left to right,
 // starting from its painted spot.
-const BRAND_WIDTH = 120;
+const BRAND_WIDTH = 160;
 const clouds = [
   { src: cloudHigh, x: 41, y: 4, seconds: 46 },
   { src: cloudLow, x: 161, y: 87, seconds: 38 },
@@ -148,9 +151,11 @@ const clouds = [
               />
             </span>
           </span>
-          <span class="wordmark">Risan Bagja</span>
+          <span class="brand-name">
+            <span class="wordmark">Risan Bagja</span>
+            <span class="tagline">Dari peron ke peron</span>
+          </span>
         </a>
-        <span class="tagline">Dari peron ke peron</span>
         <nav class="journal" aria-label="Navigasi Utama">
           <ul>
             {
@@ -211,9 +216,21 @@ const clouds = [
         </div>
         <div class="fine">
           <span>© 2007–{new Date().getFullYear()} Risan Bagja</span>
+          <span>
+            Suara kereta: <a href={RAILCAR_SOUND_SOURCE}>virtualMODE</a>, CC BY 3.0
+          </span>
           <a href="#">Kembali ke atas ↑</a>
         </div>
       </div>
+      {/* The panorama is flattened onto --sand (#fbf6ed): with transparency kept, this
+          fine line art weighs about four times as much. Re-export it if --sand changes. */}
+      <Image
+        class="footer-art"
+        src={footerPanorama}
+        widths={[640, 960, 1280, 1600, footerPanorama.width]}
+        sizes="100vw"
+        alt=""
+      />
     </footer>
 
     <script>
@@ -302,6 +319,31 @@ const clouds = [
 
       calm.addEventListener('change', follow);
       follow();
+    </script>
+
+    <script>
+      // Hovering the logo sounds the railcar: a horn blast, then a WAB BDhe 4/4 rumbling
+      // past. Browsers allow sound only after the visitor has clicked or typed on the
+      // page, so hovers before that stay silent and fetch nothing.
+      let railcar: HTMLAudioElement | undefined;
+
+      document.querySelector('.brand')?.addEventListener('mouseenter', () => {
+        if (navigator.userActivation?.hasBeenActive === false) {
+          return;
+        }
+
+        if (!railcar) {
+          railcar = new Audio('/audio/wab-bdhe.mp3');
+          railcar.volume = 0.45;
+        }
+
+        if (!railcar.paused) {
+          return;
+        }
+
+        railcar.currentTime = 0;
+        railcar.play().catch(() => {});
+      });
     </script>
 
     {/* client:idle, not client:load: the palette is worth ~0ms until someone
