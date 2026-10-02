@@ -1694,8 +1694,12 @@ footer.site-footer .fine a {
     font-size: 1.125rem;
   }
   .shell,
-  .wrap {
+  .wrap,
+  footer.site-footer .inner {
     padding: 0 20px;
+  }
+  .footer-art {
+    --column: calc(100% - 40px);
   }
   header.masthead {
     padding: 24px 0 0;
