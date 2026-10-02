@@ -217,7 +217,8 @@ const clouds = [
         <div class="fine">
           <span>© 2007–{new Date().getFullYear()} Risan Bagja</span>
           <span>
-            Suara kereta: <a href={RAILCAR_SOUND_SOURCE}>virtualMODE</a>, CC BY 3.0
+            Suara kereta: potongan rekaman <a href={RAILCAR_SOUND_SOURCE}>virtualMODE</a> dengan
+            klakson sintetis, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>
           </span>
           <a href="#">Kembali ke atas ↑</a>
         </div>
@@ -323,7 +324,8 @@ const clouds = [
 
     <script>
       // Hovering the logo sounds the railcar: a horn blast, then a WAB BDhe 4/4 rumbling
-      // past. Browsers allow sound only after the visitor has clicked or typed on the
+      // past. The clip stays under three seconds, so it needs no stop control
+      // (WCAG 1.4.2). Browsers allow sound only after the visitor has clicked or typed on the
       // page, so hovers before that stay silent and fetch nothing.
       let railcar: HTMLAudioElement | undefined;
 

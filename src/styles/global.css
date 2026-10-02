@@ -1656,6 +1656,7 @@ footer.site-footer .fine a {
     flex-direction: column;
     align-items: center;
     gap: 6px;
+    text-align: center;
   }
 }
 
