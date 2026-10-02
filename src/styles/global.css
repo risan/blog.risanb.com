@@ -1637,9 +1637,9 @@ footer.site-footer .fine a {
 }
 .footer-art {
   display: block;
-  width: 100%;
+  width: min(100%, 1100px);
   height: auto;
-  margin-top: 12px;
+  margin: 12px auto 0;
 }
 @media (max-width: 640px) {
   .footer-main {
