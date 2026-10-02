@@ -82,10 +82,11 @@ const clouds = [
 // on the bridge deck, then the front band (railing, poles, trees) cropped from y 300 of
 // the same canvas, so the train runs behind it. Numbers are canvas pixels.
 const SCENE_WIDTHS = [640, 960, 1280, 1600, footerValley.width];
-const sceneTrainHeight = 48;
+const sceneRail = 482;
+const sceneTrainHeight = 96;
 const sceneTrainWidth = (footerTrain.width * sceneTrainHeight) / footerTrain.height;
 const sceneTrainStyle = [
-  `top: ${(434 / footerValley.height) * 100}%`,
+  `top: ${((sceneRail - sceneTrainHeight) / footerValley.height) * 100}%`,
   `width: ${(sceneTrainWidth / footerValley.width) * 100}%`,
 ].join('; ');
 const sceneFrontStyle = `top: ${(300 / footerValley.height) * 100}%`;
@@ -245,8 +246,8 @@ const sceneFrontStyle = `top: ${(300 / footerValley.height) * 100}%`;
           <Image
             class="scene-train"
             src={footerTrain}
-            widths={[240, 480, 800, 1200]}
-            sizes="20vw"
+            widths={[480, 800, 1200, footerTrain.width]}
+            sizes="40vw"
             style={sceneTrainStyle}
             alt=""
           />
@@ -354,7 +355,7 @@ const sceneFrontStyle = `top: ${(300 / footerValley.height) * 100}%`;
       // The footer train crosses the bridge from right to left, then waits a random
       // while before the next run. A run starts only while the scene is on screen, so
       // a visitor reaching the footer does not land in the middle of a long wait.
-      const CROSSING_MS = 24000;
+      const CROSSING_MS = 28000;
 
       const run = document.querySelector<HTMLElement>('.scene-run');
       const scene = document.querySelector('.footer-scene');
