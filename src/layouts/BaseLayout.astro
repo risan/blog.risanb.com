@@ -258,19 +258,50 @@ const clouds = [
         return run.finished;
       }
 
-      async function shuttle(train: HTMLElement) {
+      // Bumped whenever the reduced-motion preference flips, so a loop sleeping in a
+      // pause knows it has been replaced and quits.
+      let trip = 0;
+
+      async function shuttle(train: HTMLElement, id: number) {
         for (;;) {
           await pause(1500, 6000);
+          if (id !== trip) {
+            return;
+          }
+
           await drive(train, HIDDEN_LEFT, HIDDEN_RIGHT, CLIMB_MS);
           await pause(3000, 10000);
+          if (id !== trip) {
+            return;
+          }
+
           await drive(train, HIDDEN_RIGHT, HIDDEN_LEFT, DESCENT_MS);
         }
       }
 
       const train = document.querySelector<HTMLElement>('.brand-train');
-      if (train && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        shuttle(train);
+      const calm = matchMedia('(prefers-reduced-motion: reduce)');
+
+      // Cancelling the running leg rejects its `finished` promise; that is how a loop
+      // stops mid-trip, so the rejection is expected. CSS then parks the train: out of
+      // sight when motion is allowed, at its painted spot when it is reduced.
+      function follow() {
+        if (!train) {
+          return;
+        }
+
+        trip += 1;
+        for (const run of train.getAnimations()) {
+          run.cancel();
+        }
+
+        if (!calm.matches) {
+          shuttle(train, trip).catch(() => {});
+        }
       }
+
+      calm.addEventListener('change', follow);
+      follow();
     </script>
 
     {/* client:idle, not client:load: the palette is worth ~0ms until someone
