@@ -1673,7 +1673,7 @@ footer.site-footer .fine a {
 }
 @media (prefers-reduced-motion: reduce) {
   .scene-run {
-    transform: translateX(41%);
+    transform: translateX(31%);
   }
 }
 @media (max-width: 640px) {
