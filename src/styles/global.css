@@ -1589,6 +1589,7 @@ footer.site-footer {
   background: var(--sand);
   color: var(--ink);
   padding-top: 44px;
+  overflow-x: clip;
 }
 footer.site-footer .inner {
   max-width: 1180px;
@@ -1635,11 +1636,16 @@ footer.site-footer .fine {
 footer.site-footer .fine a {
   font-size: 0.8125rem;
 }
+/* Each side of the art fades over its outer 10%, so at 1.25x the content column its
+   solid middle spans exactly that column and the fades fall just outside it. On phones
+   the overhang is clipped by the footer. */
 .footer-art {
+  --column: calc(min(1180px, 100%) - 2 * clamp(20px, 4.5vw, 40px));
   display: block;
-  width: min(100%, 1100px);
+  width: calc(var(--column) * 1.25);
+  max-width: none;
   height: auto;
-  margin: 12px auto 0;
+  margin: 12px 0 0 calc((100% - var(--column) * 1.25) / 2);
 }
 @media (max-width: 640px) {
   .footer-main {
