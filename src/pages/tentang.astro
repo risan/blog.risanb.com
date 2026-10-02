@@ -1,5 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const RAILCAR_SOUND_SOURCE =
+  'https://commons.wikimedia.org/wiki/File:BDhe_4-4_%26_Bt_122_at_Lauterbrunnen_station.webm';
 ---
 
 <BaseLayout
@@ -65,6 +68,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div class="line"></div>
         </div>
       </div>
+
+      {/* The logo's hover sound uses a CC BY 3.0 recording, which must be credited. */}
+      <p style="margin-top: 56px; font-size: 0.8125rem; color: var(--muted);">
+        Suara kereta di logo: potongan rekaman <a href={RAILCAR_SOUND_SOURCE}>virtualMODE</a> dengan klakson sintetis, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>.
+      </p>
     </article>
   </div>
 </BaseLayout>

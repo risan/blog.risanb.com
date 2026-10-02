@@ -2,7 +2,7 @@
    blog.risanb.com — "Personal Journal" (Catatan Perjalanan & Refleksi)
    An expressive, warm, tactile journal aesthetic: sand linen background,
    warm coffee ink, Fraunces display serif, Lora body, Caveat handwritten accents,
-   terracotta accents, and a sand footer over a valley where a train crosses the bridge.
+   terracotta accents, and a sand footer over a watercolour of a train crossing a bridge.
    ========================================================================== */
 
 /* Self-hosted variable & web fonts. No third-party CDN requests, no FOIT. */
@@ -1600,11 +1600,6 @@ footer.site-footer .inner {
   align-items: center;
   gap: 18px;
 }
-.footer-mark img {
-  display: block;
-  width: 96px;
-  height: auto;
-}
 .footer-note {
   flex: 1;
   margin: 0;
@@ -1640,41 +1635,11 @@ footer.site-footer .fine {
 footer.site-footer .fine a {
   font-size: 0.8125rem;
 }
-.footer-scene {
-  position: relative;
-  overflow: hidden;
-  margin-top: 12px;
-}
-.scene-valley {
+.footer-art {
   display: block;
   width: 100%;
   height: auto;
-}
-.scene-run {
-  position: absolute;
-  inset: 0;
-}
-.scene-train,
-.scene-front {
-  position: absolute;
-  left: 0;
-  height: auto;
-}
-.scene-front {
-  width: 100%;
-}
-
-/* With motion allowed the train waits out of sight past the right edge; the footer
-   script drives it from there. Reduced motion parks it mid-bridge. */
-@media (prefers-reduced-motion: no-preference) {
-  .scene-run {
-    transform: translateX(100%);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .scene-run {
-    transform: translateX(31%);
-  }
+  margin-top: 12px;
 }
 @media (max-width: 640px) {
   .footer-main {
