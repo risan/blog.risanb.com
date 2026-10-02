@@ -170,9 +170,73 @@ header.masthead > .shell {
 }
 
 .brand-mark {
+  position: relative;
   width: 120px;
-  height: auto;
   display: block;
+}
+
+.brand-scene {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Clouds pass behind the scene and fade in and out at the logo's sides. */
+.brand-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+}
+
+.brand-cloud {
+  position: absolute;
+  height: auto;
+  animation: brand-cloud-drift linear infinite;
+}
+
+@keyframes brand-cloud-drift {
+  from {
+    transform: translateX(var(--from));
+  }
+  to {
+    transform: translateX(var(--to));
+  }
+}
+
+/* The mask stays put while the train slides, so the train fades in and out at the ends
+   of the painted track (canvas x 142 to 1194). */
+.brand-rail {
+  position: absolute;
+  inset: 0;
+  mask-image: linear-gradient(
+    to right,
+    transparent 11.67%,
+    #000 19.88%,
+    #000 89.48%,
+    transparent 98.11%
+  );
+}
+
+.brand-train {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* With motion allowed the train starts out of sight, left of the track; the header
+   script drives it from there. Reduced motion keeps it parked where it was painted. */
+@media (prefers-reduced-motion: no-preference) {
+  .brand-train {
+    transform: translate(-53.08%, 15.62%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-cloud {
+    animation: none;
+  }
 }
 
 .wordmark {

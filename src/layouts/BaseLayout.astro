@@ -3,7 +3,11 @@ import '../styles/global.css';
 import SearchModal from '../components/SearchModal.vue';
 import MediaLightbox from '../components/MediaLightbox.vue';
 import { Image } from 'astro:assets';
-import logo from '../assets/logo.webp';
+import logoScene from '../assets/eiger/scene.webp';
+import logoTrain from '../assets/eiger/train.webp';
+import cloudHigh from '../assets/eiger/cloud-1.webp';
+import cloudLow from '../assets/eiger/cloud-2.webp';
+import cloudRight from '../assets/eiger/cloud-3.webp';
 import logoFooter from '../assets/logo-footer.webp';
 
 interface Props {
@@ -41,6 +45,33 @@ const nav = [
   { href: '/tentang/', label: 'Tentang' },
 ] as const;
 const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
+
+// The header logo is layered on one canvas (the scene's size): sky strokes, the still
+// scene, then the train. Each cloud drifts across the whole canvas, left to right,
+// starting from its painted spot.
+const BRAND_WIDTH = 120;
+const clouds = [
+  { src: cloudHigh, x: 41, y: 4, seconds: 46 },
+  { src: cloudLow, x: 161, y: 87, seconds: 38 },
+  { src: cloudRight, x: 1015, y: 162, seconds: 54 },
+].map(({ src, x, y, seconds }) => {
+  const canvas = logoScene;
+  const w = src.width;
+  const travelled = (x + w) / (canvas.width + w);
+  return {
+    src,
+    width: Math.round((BRAND_WIDTH * w) / canvas.width),
+    style: [
+      `left: ${(x / canvas.width) * 100}%`,
+      `top: ${(y / canvas.height) * 100}%`,
+      `width: ${(w / canvas.width) * 100}%`,
+      `--from: ${(-(x + w) / w) * 100}%`,
+      `--to: ${((canvas.width - x) / w) * 100}%`,
+      `animation-duration: ${seconds}s`,
+      `animation-delay: -${travelled * seconds}s`,
+    ].join('; '),
+  };
+});
 ---
 
 <!doctype html>
@@ -82,7 +113,41 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
     <header class="masthead">
       <div class="shell">
         <a class="brand" href="/">
-          <Image class="brand-mark" src={logo} width={120} layout="fixed" loading="eager" alt="" />
+          <span class="brand-mark">
+            <span class="brand-sky">
+              {
+                clouds.map((cloud) => (
+                  <Image
+                    class="brand-cloud"
+                    src={cloud.src}
+                    width={cloud.width}
+                    layout="fixed"
+                    loading="eager"
+                    style={cloud.style}
+                    alt=""
+                  />
+                ))
+              }
+            </span>
+            <Image
+              class="brand-scene"
+              src={logoScene}
+              width={BRAND_WIDTH}
+              layout="fixed"
+              loading="eager"
+              alt=""
+            />
+            <span class="brand-rail">
+              <Image
+                class="brand-train"
+                src={logoTrain}
+                width={BRAND_WIDTH}
+                layout="fixed"
+                loading="eager"
+                alt=""
+              />
+            </span>
+          </span>
           <span class="wordmark">Risan Bagja</span>
         </a>
         <span class="tagline">Dari peron ke peron</span>
@@ -157,6 +222,54 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
         document.querySelectorAll('[data-shortcut-label]').forEach((kbd) => {
           kbd.textContent = '⌘K';
         });
+      }
+    </script>
+
+    <script>
+      // The header train shuttles along the painted rail: up slowly, a random pause, down
+      // a bit faster, another pause. Distances are canvas pixels of the logo layers
+      // (1217x921): the rail's slope, and how far the train must slide to sit past either
+      // end of the painted track, where .brand-rail fades it out.
+      const CANVAS_WIDTH = 1217;
+      const CANVAS_HEIGHT = 921;
+      const RAIL_SLOPE = -0.22268;
+      const HIDDEN_LEFT = -646;
+      const HIDDEN_RIGHT = 663;
+      const CLIMB_MS = 18000;
+      const DESCENT_MS = 11000;
+
+      const alongRail = (dx: number) =>
+        `translate(${(dx / CANVAS_WIDTH) * 100}%, ${((dx * RAIL_SLOPE) / CANVAS_HEIGHT) * 100}%)`;
+
+      const pause = (min: number, max: number) =>
+        new Promise((resume) => setTimeout(resume, min + Math.random() * (max - min)));
+
+      function drive(train: HTMLElement, from: number, to: number, duration: number) {
+        const run = train.animate([{ transform: alongRail(from) }, { transform: alongRail(to) }], {
+          duration,
+          fill: 'forwards',
+        });
+        for (const previous of train.getAnimations()) {
+          if (previous !== run) {
+            previous.cancel();
+          }
+        }
+
+        return run.finished;
+      }
+
+      async function shuttle(train: HTMLElement) {
+        for (;;) {
+          await pause(1500, 6000);
+          await drive(train, HIDDEN_LEFT, HIDDEN_RIGHT, CLIMB_MS);
+          await pause(3000, 10000);
+          await drive(train, HIDDEN_RIGHT, HIDDEN_LEFT, DESCENT_MS);
+        }
+      }
+
+      const train = document.querySelector<HTMLElement>('.brand-train');
+      if (train && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        shuttle(train);
       }
     </script>
 
