@@ -183,59 +183,34 @@ header.masthead > .shell {
   height: auto;
 }
 
-/* The train is its own layer over a train-free scene. It rides an
-   offset-path traced from the painted rails; one transitioned --trip drives
-   the distance along it, so a pointer that leaves mid-trip reverses the
-   train along the same rails. The image inside grows, fades and turns from
-   the same value. Scale and turn sit on the inner element because offset
-   applies before scale on one element, which would stretch the path. The
-   cut-out faces left, so it mirrors through the bend, where the real train
-   swings round to face down the slope. */
+/* The painted train sits on its own layer over a train-free scene. On hover
+   src/lib/header-train.ts swaps it for 3D box cars textured from the
+   painting, drawn in the painting's 1532x972 pixel space and scaled down. */
 .brand-train {
   position: absolute;
   inset: 0;
 }
 
-.brand-train img {
-  transform-origin: 40.14% 57.61%;
+.brand-train-3d {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1532px;
+  height: 972px;
+  transform: scale(var(--fit, 0.078));
+  transform-origin: 0 0;
+  visibility: hidden;
+  pointer-events: none;
+  /* The painting's own soft outline, so the train leaves through the painted edge. */
+  -webkit-mask: var(--train-mask) 0 0 / 100% 100% no-repeat;
+  mask: var(--train-mask) 0 0 / 100% 100% no-repeat;
 }
 
-@property --trip {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 0;
-}
-
-/* transition-behavior stands in for @property, which @supports cannot
-   test; every browser with it has @property and offset-path. */
-@supports (transition-behavior: allow-discrete) {
-  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .brand-train {
-      offset-path: path('M 48.2 43.9 C 47.5 44.5 45.0 46.2 43.9 47.4 C 42.7 48.6 41.8 49.8 41.3 50.9 C 40.7 52.0 40.5 52.9 40.6 54.0 C 40.7 55.2 41.1 56.5 41.9 57.6 C 42.7 58.6 44.2 59.5 45.4 60.3 C 46.7 61.1 47.8 61.6 49.3 62.3 C 50.9 63.0 53.1 63.9 54.8 64.6 C 56.5 65.3 57.8 66.0 59.5 66.6 C 61.2 67.2 63.2 67.8 65.0 68.3 C 66.8 68.8 68.5 69.2 70.5 69.7 C 72.5 70.2 74.4 70.7 76.8 71.3 C 79.1 71.9 81.7 72.5 84.6 73.2 C 87.5 74.0 90.9 74.8 94.0 75.6 C 97.1 76.4 101.8 77.5 103.4 77.9');
-      offset-anchor: 48.2px 43.9px;
-      offset-rotate: 0deg;
-      offset-distance: calc(var(--trip) * 100%);
-      transition: --trip 1.4s cubic-bezier(0, 0, 0.5, 1);
-    }
-
-    .brand-train img {
-      scale: calc(1 + var(--trip) * 0.5);
-      rotate: y calc(clamp(0, (var(--trip) - 0.12) / 0.07, 1) * 180deg);
-      opacity: calc((1 - var(--trip)) / 0.22);
-    }
-
-    .brand:hover .brand-train {
-      --trip: 1;
-      transition: --trip 1.8s cubic-bezier(0.5, 0, 1, 1);
-    }
-  }
-
-  @media (hover: hover) and (prefers-reduced-motion: no-preference) and (max-width: 820px) {
-    .brand-train {
-      offset-path: path('M 35.3 32.2 C 34.8 32.6 33.0 33.9 32.2 34.8 C 31.3 35.6 30.7 36.5 30.3 37.3 C 29.9 38.2 29.7 38.8 29.8 39.6 C 29.8 40.4 30.1 41.5 30.7 42.2 C 31.3 43.0 32.4 43.7 33.3 44.2 C 34.2 44.8 35.0 45.1 36.2 45.7 C 37.3 46.2 39.0 46.9 40.2 47.4 C 41.5 47.9 42.4 48.4 43.7 48.8 C 44.9 49.3 46.3 49.7 47.7 50.1 C 49.0 50.5 50.3 50.8 51.7 51.1 C 53.1 51.5 54.6 51.8 56.3 52.3 C 58.0 52.7 59.9 53.2 62.0 53.7 C 64.1 54.2 66.6 54.9 68.9 55.4 C 71.2 56.0 74.7 56.9 75.8 57.2');
-      offset-anchor: 35.3px 32.2px;
-    }
-  }
+.brand-train-3d i {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
 }
 
 .wordmark {

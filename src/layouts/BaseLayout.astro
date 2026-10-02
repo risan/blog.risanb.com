@@ -5,6 +5,8 @@ import MediaLightbox from '../components/MediaLightbox.vue';
 import { Image } from 'astro:assets';
 import logoScene from '../assets/logo-scene.webp';
 import logoTrain from '../assets/logo-train.webp';
+import trainAtlas from '../assets/train-atlas.webp';
+import trainMask from '../assets/train-mask.png';
 import logoFooter from '../assets/logo-footer.webp';
 
 interface Props {
@@ -85,9 +87,12 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
         <a class="brand" href="/">
           <span class="brand-mark">
             <Image src={logoScene} width={120} layout="fixed" loading="eager" alt="" />
-            <span class="brand-train">
-              <Image src={logoTrain} width={240} layout="fixed" loading="eager" alt="" />
-            </span>
+            <Image class="brand-train" src={logoTrain} width={120} layout="fixed" loading="eager" alt="" />
+            <span
+              class="brand-train-3d"
+              data-atlas={trainAtlas.src}
+              data-mask={trainMask.src}
+            ></span>
           </span>
           <span class="wordmark">Risan Bagja</span>
         </a>
@@ -156,6 +161,15 @@ const isCurrent = (href: string) => Astro.url.pathname.startsWith(href);
         </div>
       </div>
     </footer>
+
+    <script>
+      import { mountHeaderTrain } from '../lib/header-train';
+
+      const brand = document.querySelector<HTMLElement>('.brand');
+      if (brand) {
+        mountHeaderTrain(brand);
+      }
+    </script>
 
     <script>
       // The button ships "Ctrl K"; Apple keyboards say ⌘ instead.
