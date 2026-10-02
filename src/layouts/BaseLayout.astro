@@ -9,7 +9,9 @@ import cloudHigh from '../assets/eiger/cloud-1.webp';
 import cloudLow from '../assets/eiger/cloud-2.webp';
 import cloudRight from '../assets/eiger/cloud-3.webp';
 import logoFooter from '../assets/logo-footer.webp';
-import footerPanorama from '../assets/footer-panorama.webp';
+import footerValley from '../assets/footer/valley.webp';
+import footerTrain from '../assets/footer/train.webp';
+import footerFront from '../assets/footer/front.webp';
 
 interface Props {
   title: string;
@@ -75,6 +77,18 @@ const clouds = [
     ].join('; '),
   };
 });
+
+// The footer scene is layered on the valley's canvas (2172x724): the valley, the train
+// on the bridge deck, then the front band (railing, poles, trees) cropped from y 300 of
+// the same canvas, so the train runs behind it. Numbers are canvas pixels.
+const SCENE_WIDTHS = [640, 960, 1280, 1600, footerValley.width];
+const sceneTrainHeight = 48;
+const sceneTrainWidth = (footerTrain.width * sceneTrainHeight) / footerTrain.height;
+const sceneTrainStyle = [
+  `top: ${(434 / footerValley.height) * 100}%`,
+  `width: ${(sceneTrainWidth / footerValley.width) * 100}%`,
+].join('; ');
+const sceneFrontStyle = `top: ${(300 / footerValley.height) * 100}%`;
 ---
 
 <!doctype html>
@@ -223,15 +237,29 @@ const clouds = [
           <a href="#">Kembali ke atas ↑</a>
         </div>
       </div>
-      {/* The panorama is flattened onto --sand (#fbf6ed): with transparency kept, this
-          fine line art weighs about four times as much. Re-export it if --sand changes. */}
-      <Image
-        class="footer-art"
-        src={footerPanorama}
-        widths={[640, 960, 1280, 1600, footerPanorama.width]}
-        sizes="100vw"
-        alt=""
-      />
+      <div class="footer-scene">
+        {/* The valley is flattened onto --sand (#fbf6ed) to keep it light. Re-export it
+            if --sand changes. */}
+        <Image class="scene-valley" src={footerValley} widths={SCENE_WIDTHS} sizes="100vw" alt="" />
+        <div class="scene-run">
+          <Image
+            class="scene-train"
+            src={footerTrain}
+            widths={[240, 480, 800, 1200]}
+            sizes="20vw"
+            style={sceneTrainStyle}
+            alt=""
+          />
+        </div>
+        <Image
+          class="scene-front"
+          src={footerFront}
+          widths={SCENE_WIDTHS}
+          sizes="100vw"
+          style={sceneFrontStyle}
+          alt=""
+        />
+      </div>
     </footer>
 
     <script>
@@ -315,6 +343,77 @@ const clouds = [
 
         if (!calm.matches) {
           shuttle(train, trip).catch(() => {});
+        }
+      }
+
+      calm.addEventListener('change', follow);
+      follow();
+    </script>
+
+    <script>
+      // The footer train crosses the bridge from right to left, then waits a random
+      // while before the next run. A run starts only while the scene is on screen, so
+      // a visitor reaching the footer does not land in the middle of a long wait.
+      const CROSSING_MS = 24000;
+
+      const run = document.querySelector<HTMLElement>('.scene-run');
+      const scene = document.querySelector('.footer-scene');
+      const calm = matchMedia('(prefers-reduced-motion: reduce)');
+      let inView = false;
+      let wakeOnView: (() => void) | undefined;
+
+      const pause = (min: number, max: number) =>
+        new Promise((resume) => setTimeout(resume, min + Math.random() * (max - min)));
+
+      const sceneVisible = () =>
+        inView ? Promise.resolve() : new Promise<void>((resume) => (wakeOnView = resume));
+
+      if (scene) {
+        new IntersectionObserver(([entry]) => {
+          inView = entry.isIntersecting;
+          if (inView) {
+            wakeOnView?.();
+            wakeOnView = undefined;
+          }
+        }).observe(scene);
+      }
+
+      // Bumped whenever the reduced-motion preference flips, so a loop waiting in a
+      // pause knows it has been replaced and quits.
+      let crossing = 0;
+
+      async function timetable(run: HTMLElement, id: number) {
+        for (;;) {
+          await sceneVisible();
+          await pause(1000, 4000);
+          if (id !== crossing) {
+            return;
+          }
+
+          // The run layer spans the scene, so 100% sets the train just past the right
+          // edge, and minus the train's own share of the width takes it past the left.
+          const away = `-${run.querySelector<HTMLElement>('.scene-train')!.style.width}`;
+          await run.animate([{ transform: 'translateX(100%)' }, { transform: `translateX(${away})` }], {
+            duration: CROSSING_MS,
+          }).finished;
+          await pause(5000, 15000);
+        }
+      }
+
+      // Cancelling the running crossing rejects its `finished` promise; that is how a
+      // loop stops mid-run, so the rejection is expected.
+      function follow() {
+        if (!run || !scene) {
+          return;
+        }
+
+        crossing += 1;
+        for (const crossingRun of run.getAnimations()) {
+          crossingRun.cancel();
+        }
+
+        if (!calm.matches) {
+          timetable(run, crossing).catch(() => {});
         }
       }
 

@@ -2,7 +2,7 @@
    blog.risanb.com — "Personal Journal" (Catatan Perjalanan & Refleksi)
    An expressive, warm, tactile journal aesthetic: sand linen background,
    warm coffee ink, Fraunces display serif, Lora body, Caveat handwritten accents,
-   terracotta accents, and a sand footer over a sepia valley panorama.
+   terracotta accents, and a sand footer over a valley where a train crosses the bridge.
    ========================================================================== */
 
 /* Self-hosted variable & web fonts. No third-party CDN requests, no FOIT. */
@@ -1640,11 +1640,41 @@ footer.site-footer .fine {
 footer.site-footer .fine a {
   font-size: 0.8125rem;
 }
-.footer-art {
+.footer-scene {
+  position: relative;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.scene-valley {
   display: block;
   width: 100%;
   height: auto;
-  margin-top: 12px;
+}
+.scene-run {
+  position: absolute;
+  inset: 0;
+}
+.scene-train,
+.scene-front {
+  position: absolute;
+  left: 0;
+  height: auto;
+}
+.scene-front {
+  width: 100%;
+}
+
+/* With motion allowed the train waits out of sight past the right edge; the footer
+   script drives it from there. Reduced motion parks it mid-bridge. */
+@media (prefers-reduced-motion: no-preference) {
+  .scene-run {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-run {
+    transform: translateX(41%);
+  }
 }
 @media (max-width: 640px) {
   .footer-main {
