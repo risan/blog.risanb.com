@@ -360,20 +360,25 @@ const sceneFrontStyle = `top: ${(300 / footerValley.height) * 100}%`;
       const scene = document.querySelector('.footer-scene');
       const calm = matchMedia('(prefers-reduced-motion: reduce)');
       let inView = false;
-      let wakeOnView: (() => void) | undefined;
+      // Every waiting loop is woken, including one replaced by a reduced-motion flip;
+      // that one sees the bumped `crossing` and quits.
+      let wakeOnView: (() => void)[] = [];
 
       const pause = (min: number, max: number) =>
         new Promise((resume) => setTimeout(resume, min + Math.random() * (max - min)));
 
       const sceneVisible = () =>
-        inView ? Promise.resolve() : new Promise<void>((resume) => (wakeOnView = resume));
+        inView ? Promise.resolve() : new Promise<void>((resume) => wakeOnView.push(resume));
 
       if (scene) {
         new IntersectionObserver(([entry]) => {
           inView = entry.isIntersecting;
           if (inView) {
-            wakeOnView?.();
-            wakeOnView = undefined;
+            for (const wake of wakeOnView) {
+              wake();
+            }
+
+            wakeOnView = [];
           }
         }).observe(scene);
       }
@@ -388,6 +393,11 @@ const sceneFrontStyle = `top: ${(300 / footerValley.height) * 100}%`;
           await pause(1000, 4000);
           if (id !== crossing) {
             return;
+          }
+
+          // Scrolled away during the wait: hold the run for the next visit.
+          if (!inView) {
+            continue;
           }
 
           // The run layer spans the scene, so 100% sets the train just past the right
