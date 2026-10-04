@@ -1,6 +1,6 @@
 # Happy Birthday, Baby — your captions and five alternatives
 
-Listed in gallery order. Your supplied drafts are used on the post; the alternatives below are for later selection. Spelling and grammar are lightly corrected in the alternatives.
+Listed in gallery order. The post now uses your final selections. Your initial drafts and these alternatives are retained below for reference. Spelling and grammar are lightly corrected in the alternatives.
 
 ## 01. DSCF6808.jpeg
 

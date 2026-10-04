@@ -35,66 +35,66 @@ Happy birthday. Here’s to another year of our little family, and a lifetime of
 
 [![Bolekah ku menyimpan rasa?](/photos/happy-birthday-baby/thumb-01-dscf6808.webp)](/photos/happy-birthday-baby/01-dscf6808.webp)
 
-[![A short morning ride to nearby cafe](/photos/happy-birthday-baby/thumb-02-img-7325.webp)](/photos/happy-birthday-baby/02-img-7325.webp)
+[![A short morning ride to a nearby café.](/photos/happy-birthday-baby/thumb-02-img-7325.webp)](/photos/happy-birthday-baby/02-img-7325.webp)
 
-[![Let me down!](/photos/happy-birthday-baby/thumb-03-img-5515.webp)](/photos/happy-birthday-baby/03-img-5515.webp)
+[![I have things to investigate down there.](/photos/happy-birthday-baby/thumb-03-img-5515.webp)](/photos/happy-birthday-baby/03-img-5515.webp)
 
-[![Terpesona... Aku terpesona...](/photos/happy-birthday-baby/thumb-04-dscf4149.webp)](/photos/happy-birthday-baby/04-dscf4149.webp)
+[![Terpesona... Aku terpesona... Memandang memandang wajahmu yang manis...](/photos/happy-birthday-baby/thumb-04-dscf4149.webp)](/photos/happy-birthday-baby/04-dscf4149.webp)
 
-[![Chef Kinanti in action](/photos/happy-birthday-baby/thumb-05-dscf2059.webp)](/photos/happy-birthday-baby/05-dscf2059.webp)
+[![Chef Kinanti makes sure Mama gets a bite.](/photos/happy-birthday-baby/thumb-05-dscf2059.webp)](/photos/happy-birthday-baby/05-dscf2059.webp)
 
-[![Let me down! (part 2)](/photos/happy-birthday-baby/thumb-06-img-7341.webp)](/photos/happy-birthday-baby/06-img-7341.webp)
+[![Let me down! The sequel.](/photos/happy-birthday-baby/thumb-06-img-7341.webp)](/photos/happy-birthday-baby/06-img-7341.webp)
 
-[![Let me go!](/photos/happy-birthday-baby/thumb-07-img-5249.webp)](/photos/happy-birthday-baby/07-img-5249.webp)
+[![Kinanti would like to explore independently.](/photos/happy-birthday-baby/thumb-07-img-5249.webp)](/photos/happy-birthday-baby/07-img-5249.webp)
 
-[![Let me go! (part 2)](/photos/happy-birthday-baby/thumb-08-dscf3137.webp)](/photos/happy-birthday-baby/08-dscf3137.webp)
+[![Mama laughs. Kinanti negotiates her freedom.](/photos/happy-birthday-baby/thumb-08-dscf3137.webp)](/photos/happy-birthday-baby/08-dscf3137.webp)
 
-[![A short hike to Padakasih](/photos/happy-birthday-baby/thumb-09-dscf2932.webp)](/photos/happy-birthday-baby/09-dscf2932.webp)
+[![A little family adventure on Padakasih.](/photos/happy-birthday-baby/thumb-09-dscf2932.webp)](/photos/happy-birthday-baby/09-dscf2932.webp)
 
-[![First taking a panoramic train to Garut](/photos/happy-birthday-baby/thumb-10-img-7265.webp)](/photos/happy-birthday-baby/10-img-7265.webp)
+[![Our first panoramic train ride to Garut.](/photos/happy-birthday-baby/thumb-10-img-7265.webp)](/photos/happy-birthday-baby/10-img-7265.webp)
 
-[![Just arrived at Garut](/photos/happy-birthday-baby/thumb-11-img-7154.webp)](/photos/happy-birthday-baby/11-img-7154.webp)
+[![A little arrival photo before exploring Garut.](/photos/happy-birthday-baby/thumb-11-img-7154.webp)](/photos/happy-birthday-baby/11-img-7154.webp)
 
-[![Record collections at Lokananta](/photos/happy-birthday-baby/thumb-12-img-4673.webp)](/photos/happy-birthday-baby/12-img-4673.webp)
+[![A little music history at Lokananta.](/photos/happy-birthday-baby/thumb-12-img-4673.webp)](/photos/happy-birthday-baby/12-img-4673.webp)
 
-[![Kinanti's favorite activity: waving at a passing train](/photos/happy-birthday-baby/thumb-13-dscf6645.webp)](/photos/happy-birthday-baby/13-dscf6645.webp)
+[![A passing train deserves a proper wave.](/photos/happy-birthday-baby/thumb-13-dscf6645.webp)](/photos/happy-birthday-baby/13-dscf6645.webp)
 
-[![A short ride hunting for breakfast](/photos/happy-birthday-baby/thumb-14-img-9157.webp)](/photos/happy-birthday-baby/14-img-9157.webp)
+[![A short ride, with breakfast as the destination.](/photos/happy-birthday-baby/thumb-14-img-9157.webp)](/photos/happy-birthday-baby/14-img-9157.webp)
 
-[![A calm bus ride to Bandung](/photos/happy-birthday-baby/thumb-15-img-9107.webp)](/photos/happy-birthday-baby/15-img-9107.webp)
+[![A peaceful stretch of our bus ride to Bandung.](/photos/happy-birthday-baby/thumb-15-img-9107.webp)](/photos/happy-birthday-baby/15-img-9107.webp)
 
-[![A short stop for Kinanti to take a nap](/photos/happy-birthday-baby/thumb-16-img-6931.webp)](/photos/happy-birthday-baby/16-img-6931.webp)
+[![A quick nap stop for our smallest traveler.](/photos/happy-birthday-baby/thumb-16-img-6931.webp)](/photos/happy-birthday-baby/16-img-6931.webp)
 
-[![An excurtion to Borobudur temple](/photos/happy-birthday-baby/thumb-17-dscf4340.webp)](/photos/happy-birthday-baby/17-dscf4340.webp)
+[![Exploring Borobudur with our smallest companion.](/photos/happy-birthday-baby/thumb-17-dscf4340.webp)](/photos/happy-birthday-baby/17-dscf4340.webp)
 
-[![A photoshot for Kinanti turned one](/photos/happy-birthday-baby/thumb-18-main-terus-kak-dwi-5.webp)](/photos/happy-birthday-baby/18-main-terus-kak-dwi-5.webp)
+[![A photoshoot for Kinanti’s first birthday.](/photos/happy-birthday-baby/thumb-18-main-terus-kak-dwi-5.webp)](/photos/happy-birthday-baby/18-main-terus-kak-dwi-5.webp)
 
-[![A short train ride between Ambarawa and Tuntang](/photos/happy-birthday-baby/thumb-19-img-8354.webp)](/photos/happy-birthday-baby/19-img-8354.webp)
+[![A little railway outing between Ambarawa and Tuntang.](/photos/happy-birthday-baby/thumb-19-img-8354.webp)](/photos/happy-birthday-baby/19-img-8354.webp)
 
-[![Kinanti as a bus driver](/photos/happy-birthday-baby/thumb-20-img-7387.webp)](/photos/happy-birthday-baby/20-img-7387.webp)
+[![Our bus driver is a little smaller than expected.](/photos/happy-birthday-baby/thumb-20-img-7387.webp)](/photos/happy-birthday-baby/20-img-7387.webp)
 
-[![Hungry and tired after an evening excurstion in Borobudur](/photos/happy-birthday-baby/thumb-21-img-8650.webp)](/photos/happy-birthday-baby/21-img-8650.webp)
+[![Hungry and tired after an evening at Borobudur.](/photos/happy-birthday-baby/thumb-21-img-8650.webp)](/photos/happy-birthday-baby/21-img-8650.webp)
 
-[![A barren hiking route at Bumi Hejo](/photos/happy-birthday-baby/thumb-22-img-9443.webp)](/photos/happy-birthday-baby/22-img-9443.webp)
+[![Not much shade on this stretch of Bumi Hejo.](/photos/happy-birthday-baby/thumb-22-img-9443.webp)](/photos/happy-birthday-baby/22-img-9443.webp)
 
-[![A hike to waterfall](/photos/happy-birthday-baby/thumb-23-img-9023.webp)](/photos/happy-birthday-baby/23-img-9023.webp)
+[![A trail, a waterfall, and a little nap along the way.](/photos/happy-birthday-baby/thumb-23-img-9023.webp)](/photos/happy-birthday-baby/23-img-9023.webp)
 
-[![Kinanti's sleeping with Burangrang at the distance](/photos/happy-birthday-baby/thumb-24-img-4951.webp)](/photos/happy-birthday-baby/24-img-4951.webp)
+[![Burangrang gets the view. Kinanti gets a nap.](/photos/happy-birthday-baby/thumb-24-img-4951.webp)](/photos/happy-birthday-baby/24-img-4951.webp)
 
-[![Posing at Forth Williem](/photos/happy-birthday-baby/thumb-25-dscf3930.webp)](/photos/happy-birthday-baby/25-dscf3930.webp)
+[![A little photo stop at Fort Willem.](/photos/happy-birthday-baby/thumb-25-dscf3930.webp)](/photos/happy-birthday-baby/25-dscf3930.webp)
 
-[![A quick lunch stop at Candi Prambanan](/photos/happy-birthday-baby/thumb-26-dscf4646.webp)](/photos/happy-birthday-baby/26-dscf4646.webp)
+[![A quick lunch stop at Prambanan.](/photos/happy-birthday-baby/thumb-26-dscf4646.webp)](/photos/happy-birthday-baby/26-dscf4646.webp)
 
-[![Exploring Kampung Batik Kauman](/photos/happy-birthday-baby/thumb-27-dscf4707.webp)](/photos/happy-birthday-baby/27-dscf4707.webp)
+[![A little wander through Kampung Batik Kauman.](/photos/happy-birthday-baby/thumb-27-dscf4707.webp)](/photos/happy-birthday-baby/27-dscf4707.webp)
 
-[![Es Dawet for scorching Semarang's heat](/photos/happy-birthday-baby/thumb-28-dscf6671.webp)](/photos/happy-birthday-baby/28-dscf6671.webp)
+[![A very sensible es dawet stop in Semarang.](/photos/happy-birthday-baby/thumb-28-dscf6671.webp)](/photos/happy-birthday-baby/28-dscf6671.webp)
 
-[![A short bike tour in Semarang China town](/photos/happy-birthday-baby/thumb-29-dscf6769.webp)](/photos/happy-birthday-baby/29-dscf6769.webp)
+[![Exploring Semarang’s Chinatown on two wheels.](/photos/happy-birthday-baby/thumb-29-dscf6769.webp)](/photos/happy-birthday-baby/29-dscf6769.webp)
 
-[![Lunch at Pracimasana](/photos/happy-birthday-baby/thumb-30-img-8771.webp)](/photos/happy-birthday-baby/30-img-8771.webp)
+[![A table for lunch at Pracimasana.](/photos/happy-birthday-baby/thumb-30-img-8771.webp)](/photos/happy-birthday-baby/30-img-8771.webp)
 
-[![Jika aku menjadi](/photos/happy-birthday-baby/thumb-31-img-6758.webp)](/photos/happy-birthday-baby/31-img-6758.webp)
+[![Jika aku menjadi…](/photos/happy-birthday-baby/thumb-31-img-6758.webp)](/photos/happy-birthday-baby/31-img-6758.webp)
 
-[![One requirement as a parent: able to tame a Dinosaurus](/photos/happy-birthday-baby/thumb-32-img-9654.webp)](/photos/happy-birthday-baby/32-img-9654.webp)
+[![One parenting requirement: being able to tame a dinosaur.](/photos/happy-birthday-baby/thumb-32-img-9654.webp)](/photos/happy-birthday-baby/32-img-9654.webp)
 
 {{< /gallery >}}
