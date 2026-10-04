@@ -229,24 +229,50 @@ function composeDesktop(isPortrait, seed, namedRecipe) {
  * Phone cells: 8 landscape tiles become a 3-column bento; anything else is a
  * 2-column grid, led by a full-width tile when the count is odd.
  */
-function composePhone(isPortrait) {
+function composePhone(isPortrait, compact = false) {
   const count = isPortrait.length;
-  if (count === 8 && !isPortrait.some(Boolean)) {
+  if (!compact && count === 8 && !isPortrait.some(Boolean)) {
     return { columns: 3, cells: PHONE_BENTO };
   }
 
   const cells = [];
   let i = 0;
   if (count % 2 === 1) {
-    cells.push({ c: 2, a: isPortrait[0] ? '4/5' : '16/10' });
+    cells.push({ c: 2, a: compact ? '16/10' : isPortrait[0] ? '4/5' : '16/10' });
     i = 1;
   }
 
   for (; i < count; i += 2) {
-    cells.push({ c: 1, a: isPortrait[i] || isPortrait[i + 1] ? '3/4' : '4/3' }, { c: 1 });
+    cells.push({ c: 1, a: compact ? '1/1' : isPortrait[i] || isPortrait[i + 1] ? '3/4' : '4/3' }, { c: 1 });
   }
 
   return { columns: 2, cells };
+}
+
+/** Shorter preview rows for portrait-heavy galleries; full images stay intact. */
+function composeCompactDesktop(isPortrait) {
+  const cells = [];
+  for (let index = 0; index < isPortrait.length;) {
+    // Give a landscape photo enough width to keep both people in the preview.
+    if (!isPortrait[index] && index + 1 < isPortrait.length) {
+      cells.push(...BLOCKS.wideLeft);
+      index += 2;
+      continue;
+    }
+    let portraitRun = 0;
+    while (isPortrait[index + portraitRun]) portraitRun++;
+    if (portraitRun === 1 && index + 1 < isPortrait.length) {
+      cells.push(...BLOCKS.wideRight);
+      index += 2;
+      continue;
+    }
+    const rowCount = Math.min(3, portraitRun || isPortrait.length - index);
+    for (let i = 0; i < rowCount; i++) {
+      cells.push({ c: 6 / rowCount, ...(i === 0 ? { a: rowCount === 3 ? '4/5' : '3/2' } : {}) });
+    }
+    index += rowCount;
+  }
+  return cells;
 }
 
 function readAspectRatio(figure) {
@@ -410,8 +436,11 @@ export function rehypeFigure(options = {}) {
       const firstImg = visible[0]?.children?.find((c) => c.type === 'element' && c.tagName === 'img');
       const isPortrait = visible.map((figure) => readAspectRatio(figure) < PORTRAIT_MAX_AR);
       const namedRecipe = NAMED_RECIPES[galleryNode.properties?.dataLayout];
-      const desktopCells = composeDesktop(isPortrait, hashString(String(firstImg?.properties?.src || '')), namedRecipe);
-      const phone = composePhone(isPortrait);
+      const compact = galleryNode.properties?.dataLayout === 'compact';
+      const desktopCells = compact
+        ? composeCompactDesktop(isPortrait)
+        : composeDesktop(isPortrait, hashString(String(firstImg?.properties?.src || '')), namedRecipe);
+      const phone = composePhone(isPortrait, compact);
 
       if (phone.columns === 3) {
         ensureClass(galleryNode, 'mob-3col');
