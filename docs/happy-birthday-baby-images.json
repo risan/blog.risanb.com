@@ -1,0 +1,322 @@
+[
+  {
+    "position": 1,
+    "source": "DSCF6808.jpeg",
+    "file": "01-dscf6808.webp",
+    "width": 2944,
+    "height": 4416,
+    "sourceBytes": 4752913,
+    "losslessBytes": 9500486,
+    "thumbnailBytes": 198230
+  },
+  {
+    "position": 2,
+    "source": "IMG_7325.HEIC",
+    "file": "02-img-7325.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2410793,
+    "losslessBytes": 7769634,
+    "thumbnailBytes": 287044
+  },
+  {
+    "position": 3,
+    "source": "IMG_5515.HEIC",
+    "file": "03-img-5515.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 1756878,
+    "losslessBytes": 6437854,
+    "thumbnailBytes": 271464
+  },
+  {
+    "position": 4,
+    "source": "DSCF4149.JPG",
+    "file": "04-dscf4149.webp",
+    "width": 3264,
+    "height": 4896,
+    "sourceBytes": 5397136,
+    "losslessBytes": 10008102,
+    "thumbnailBytes": 186232
+  },
+  {
+    "position": 5,
+    "source": "DSCF2059.JPG",
+    "file": "05-dscf2059.webp",
+    "width": 4896,
+    "height": 3264,
+    "sourceBytes": 4334225,
+    "losslessBytes": 8180610,
+    "thumbnailBytes": 105744
+  },
+  {
+    "position": 6,
+    "source": "IMG_7341.HEIC",
+    "file": "06-img-7341.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2793611,
+    "losslessBytes": 8166982,
+    "thumbnailBytes": 267214
+  },
+  {
+    "position": 7,
+    "source": "IMG_5249.HEIC",
+    "file": "07-img-5249.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2963209,
+    "losslessBytes": 9020496,
+    "thumbnailBytes": 300850
+  },
+  {
+    "position": 8,
+    "source": "DSCF3137.JPG",
+    "file": "08-dscf3137.webp",
+    "width": 3264,
+    "height": 4896,
+    "sourceBytes": 5540590,
+    "losslessBytes": 10876282,
+    "thumbnailBytes": 190578
+  },
+  {
+    "position": 9,
+    "source": "DSCF2932.JPG",
+    "file": "09-dscf2932.webp",
+    "width": 3264,
+    "height": 4896,
+    "sourceBytes": 4941339,
+    "losslessBytes": 10031222,
+    "thumbnailBytes": 192902
+  },
+  {
+    "position": 10,
+    "source": "IMG_7265.HEIC",
+    "file": "10-img-7265.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 1786386,
+    "losslessBytes": 6675840,
+    "thumbnailBytes": 231460
+  },
+  {
+    "position": 11,
+    "source": "IMG_7154.HEIC",
+    "file": "11-img-7154.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2395791,
+    "losslessBytes": 7231142,
+    "thumbnailBytes": 267644
+  },
+  {
+    "position": 12,
+    "source": "IMG_4673.heic",
+    "file": "12-img-4673.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2569355,
+    "losslessBytes": 8244018,
+    "thumbnailBytes": 253364
+  },
+  {
+    "position": 13,
+    "source": "DSCF6645.jpeg",
+    "file": "13-dscf6645.webp",
+    "width": 2944,
+    "height": 4416,
+    "sourceBytes": 4194008,
+    "losslessBytes": 7365776,
+    "thumbnailBytes": 155094
+  },
+  {
+    "position": 14,
+    "source": "IMG_9157.HEIC",
+    "file": "14-img-9157.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 3244647,
+    "losslessBytes": 9410216,
+    "thumbnailBytes": 323210
+  },
+  {
+    "position": 15,
+    "source": "IMG_9107.HEIC",
+    "file": "15-img-9107.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 1869146,
+    "losslessBytes": 6286152,
+    "thumbnailBytes": 197250
+  },
+  {
+    "position": 16,
+    "source": "IMG_6931.HEIC",
+    "file": "16-img-6931.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2265064,
+    "losslessBytes": 7676858,
+    "thumbnailBytes": 218236
+  },
+  {
+    "position": 17,
+    "source": "DSCF4340.JPG",
+    "file": "17-dscf4340.webp",
+    "width": 3264,
+    "height": 4896,
+    "sourceBytes": 5274372,
+    "losslessBytes": 9613610,
+    "thumbnailBytes": 195768
+  },
+  {
+    "position": 18,
+    "source": "Main Terus_Kak Dwi-5.jpeg",
+    "file": "18-main-terus-kak-dwi-5.webp",
+    "width": 4000,
+    "height": 6000,
+    "sourceBytes": 9795658,
+    "losslessBytes": 18208582,
+    "thumbnailBytes": 96740
+  },
+  {
+    "position": 19,
+    "source": "IMG_8354.HEIC",
+    "file": "19-img-8354.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2132701,
+    "losslessBytes": 6822398,
+    "thumbnailBytes": 199036
+  },
+  {
+    "position": 20,
+    "source": "IMG_7387.HEIC",
+    "file": "20-img-7387.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 3195426,
+    "losslessBytes": 8720608,
+    "thumbnailBytes": 228868
+  },
+  {
+    "position": 21,
+    "source": "IMG_8650.HEIC",
+    "file": "21-img-8650.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 3053761,
+    "losslessBytes": 8164254,
+    "thumbnailBytes": 228684
+  },
+  {
+    "position": 22,
+    "source": "IMG_9443.HEIC",
+    "file": "22-img-9443.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 3589354,
+    "losslessBytes": 9733252,
+    "thumbnailBytes": 243206
+  },
+  {
+    "position": 23,
+    "source": "IMG_9023.HEIC",
+    "file": "23-img-9023.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 1688508,
+    "losslessBytes": 6832908,
+    "thumbnailBytes": 266192
+  },
+  {
+    "position": 24,
+    "source": "IMG_4951.HEIC",
+    "file": "24-img-4951.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 1149835,
+    "losslessBytes": 4479908,
+    "thumbnailBytes": 134564
+  },
+  {
+    "position": 25,
+    "source": "DSCF3930.JPG",
+    "file": "25-dscf3930.webp",
+    "width": 3264,
+    "height": 4896,
+    "sourceBytes": 5370777,
+    "losslessBytes": 10167492,
+    "thumbnailBytes": 190480
+  },
+  {
+    "position": 26,
+    "source": "DSCF4646.JPG",
+    "file": "26-dscf4646.webp",
+    "width": 3264,
+    "height": 4896,
+    "sourceBytes": 3724927,
+    "losslessBytes": 7042118,
+    "thumbnailBytes": 96948
+  },
+  {
+    "position": 27,
+    "source": "DSCF4707.JPG",
+    "file": "27-dscf4707.webp",
+    "width": 3264,
+    "height": 4896,
+    "sourceBytes": 4719452,
+    "losslessBytes": 8515464,
+    "thumbnailBytes": 159284
+  },
+  {
+    "position": 28,
+    "source": "DSCF6671.jpeg",
+    "file": "28-dscf6671.webp",
+    "width": 4416,
+    "height": 2944,
+    "sourceBytes": 3836658,
+    "losslessBytes": 7481770,
+    "thumbnailBytes": 139938
+  },
+  {
+    "position": 29,
+    "source": "DSCF6769.jpeg",
+    "file": "29-dscf6769.webp",
+    "width": 2944,
+    "height": 4416,
+    "sourceBytes": 4823613,
+    "losslessBytes": 8971000,
+    "thumbnailBytes": 185492
+  },
+  {
+    "position": 30,
+    "source": "IMG_8771.HEIC",
+    "file": "30-img-8771.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 892712,
+    "losslessBytes": 4227380,
+    "thumbnailBytes": 135362
+  },
+  {
+    "position": 31,
+    "source": "IMG_6758.HEIC",
+    "file": "31-img-6758.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2342355,
+    "losslessBytes": 8321542,
+    "thumbnailBytes": 306760
+  },
+  {
+    "position": 32,
+    "source": "IMG_9654.HEIC",
+    "file": "32-img-9654.webp",
+    "width": 3024,
+    "height": 4032,
+    "sourceBytes": 2087890,
+    "losslessBytes": 7564884,
+    "thumbnailBytes": 257690
+  }
+]

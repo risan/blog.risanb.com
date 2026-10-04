@@ -446,14 +446,15 @@ function handlePageClick(e: MouseEvent) {
           caption: captionText,
         };
       } else {
-        const src = img?.currentSrc || img?.src || '';
+        const fullSrc = child.dataset.fullSrc;
+        const src = fullSrc || img?.currentSrc || img?.src || '';
         return {
           id: `img-${idx}`,
           type: 'image',
           src,
           thumbnailSrc: img?.src || src,
-          srcset: img?.srcset,
-          sizes: img?.sizes,
+          srcset: fullSrc ? undefined : img?.srcset,
+          sizes: fullSrc ? undefined : img?.sizes,
           alt: img?.alt || captionText,
           caption: captionText,
           width: img?.naturalWidth || (img?.width ? Number(img.width) : undefined),

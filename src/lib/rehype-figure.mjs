@@ -332,7 +332,16 @@ export function rehypeFigure(options = {}) {
       const content = node.children.filter((child) => !isBlank(child));
       if (content.length !== 1) return;
 
-      const img = content[0];
+      // A linked preview opens its full-resolution image in the gallery.
+      const link = content[0]?.type === 'element' && content[0].tagName === 'a'
+        ? content[0]
+        : null;
+      const linkedImage = link?.children?.filter((child) => !isBlank(child));
+      const fullSrc = link && linkedImage?.length === 1 &&
+        /\.(jpe?g|png|webp|avif)(\?.*)?$/i.test(String(link.properties?.href || ''))
+        ? link.properties.href
+        : null;
+      const img = fullSrc ? linkedImage[0] : content[0];
       if (img.type !== 'element' || img.tagName !== 'img') return;
 
       const rawAlt = img.properties?.alt;
@@ -341,7 +350,7 @@ export function rehypeFigure(options = {}) {
       const wrapper = {
         type: 'element',
         tagName: 'figure',
-        properties: {},
+        properties: fullSrc ? { dataFullSrc: fullSrc } : {},
         children: [
           img,
           ...(caption
