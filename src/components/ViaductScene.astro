@@ -14,6 +14,24 @@
       data-viaduct-canvas
       role="img"
       aria-label="Viaduk spiral Brusio di Swiss, jembatan batu melengkung dengan sembilan lengkungan, dilintasi kereta merah Bernina Express yang bolak-balik"></canvas>
+    <p class="viaduct-zoom-hint" data-view-hint aria-hidden="true"></p>
+    <div class="viaduct-controls" role="group" aria-label="Kontrol tampilan">
+      <button type="button" data-view-action="zoom-in" aria-label="Perbesar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+      <button type="button" data-view-action="zoom-out" aria-label="Perkecil">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+      </button>
+      <button type="button" data-view-action="tilt-up" aria-label="Miringkan ke atas">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" /></svg>
+      </button>
+      <button type="button" data-view-action="tilt-down" aria-label="Miringkan ke bawah">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      <button type="button" data-view-action="reset" aria-label="Kembalikan tampilan" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5" /></svg>
+      </button>
+    </div>
   </div>
 </section>
 
@@ -58,11 +76,95 @@
     height: 100%;
     opacity: 0;
     transition: opacity 0.6s ease;
-    /* The scene has no controls, so every swipe scrolls the page. */
+    /* Vertical swipes scroll the page; sideways drags and pinches belong to the camera. */
     touch-action: pan-y;
+    cursor: grab;
+  }
+
+  .viaduct-canvas.is-dragging {
+    cursor: grabbing;
   }
 
   .viaduct-frame.is-ready .viaduct-canvas {
+    opacity: 1;
+  }
+
+  .viaduct-controls {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: none;
+    gap: 6px;
+  }
+
+  .viaduct-frame.is-ready .viaduct-controls {
+    display: flex;
+  }
+
+  .viaduct-controls button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(138, 122, 104, 0.35);
+    border-radius: 50%;
+    background: rgba(251, 246, 237, 0.78);
+    color: var(--ink);
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.2s ease, background 0.2s ease;
+  }
+
+  .viaduct-controls button:hover:not(:disabled) {
+    background: rgba(251, 246, 237, 0.95);
+  }
+
+  .viaduct-controls button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .viaduct-controls svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* With a mouse the buttons stay out of the picture until the pointer or focus comes near. */
+  @media (hover: hover) {
+    .viaduct-controls {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .viaduct-frame:hover .viaduct-controls,
+    .viaduct-frame:focus-within .viaduct-controls {
+      opacity: 1;
+    }
+  }
+
+  .viaduct-zoom-hint {
+    position: absolute;
+    left: 50%;
+    top: 14px;
+    margin: 0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(42, 31, 23, 0.72);
+    color: var(--sand);
+    font-size: 0.8125rem;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-50%);
+    transition: opacity 0.2s ease;
+  }
+
+  .viaduct-zoom-hint.is-visible {
     opacity: 1;
   }
 
