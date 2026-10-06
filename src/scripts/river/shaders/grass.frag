@@ -13,5 +13,6 @@ void main() {
     return;
   }
 
-  outColor = vec4(vColor, 1.0) * alpha;
+  // Drawn without blending: the alpha becomes edge coverage on a multisampled canvas.
+  outColor = vec4(vColor, alpha);
 }

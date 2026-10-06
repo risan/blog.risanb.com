@@ -1,5 +1,6 @@
-// Everything that never moves, drawn once per layout: grass, pebble shore, riverbed, mossy
-// boulders lit from a height field, flowers and the soft sun shadows of the rocks.
+// Everything that never moves, drawn once per layout, as a top-down map of the world: grass,
+// pebble shore, riverbed, mossy boulders lit from a height field, flowers, and the soft sun
+// shadows of rocks and banks. The terrain mesh and the water pass both read it.
 // Output: rgb colour as seen from above, a = how lit the point is (1 sunlit, 0 shadowed).
 uniform sampler2D uGrass;
 uniform sampler2D uPebbles;
@@ -26,12 +27,21 @@ float smoothRockHeight(vec2 p) {
     + rockHeightAt(p + vec2(reach.x, -reach.y)) + rockHeightAt(p + vec2(-reach.x, reach.y)));
 }
 
-float sunLight(vec2 p, float ownHeight) {
+// Height of the bare ground, without rocks: the bank lip and the riverbed.
+float groundElevationAt(vec2 p) {
+  vec4 terrain = textureLod(uTerrain, p / uWorldSize, 0.0);
+
+  return elevationFrom(terrain.r + terrain.a, 0.0);
+}
+
+// Rays from the point towards the sun, blocked by anything higher: rocks, and the lip of a bank
+// over the water beside it.
+float sunLight(vec2 p, float ownElevation) {
   float lit = 1.0;
-  for (int step = 1; step <= 14; step += 1) {
-    float distance = float(step) * 0.055;
-    float ray = ownHeight + distance * uSun.z;
-    float blocker = rockHeightAt(p + uSun.xy * distance);
+  for (int step = 1; step <= 18; step += 1) {
+    float distance = float(step) * 0.06;
+    float ray = ownElevation + distance * uSun.z;
+    float blocker = elevationAt(p + uSun.xy * distance);
     lit = min(lit, clamp((ray - blocker) / (0.08 + distance * 0.6) + 0.35, 0.0, 1.0));
   }
 
@@ -88,6 +98,14 @@ void main() {
 
   float big = fbm(p * 0.45);
   float mid = valueNoise(p * 2.3 + 4.0);
+  // Where the grass starts follows long, slow curves; short wiggles would read as a jagged bank.
+  float edgeNoise = valueNoise(p * 0.6 + 4.0);
+
+  vec2 slopeStep = 1.5 / vec2(textureSize(uTerrain, 0)) * uWorldSize;
+  vec2 groundGradient = vec2(
+    groundElevationAt(p + vec2(slopeStep.x, 0.0)) - groundElevationAt(p - vec2(slopeStep.x, 0.0)),
+    groundElevationAt(p + vec2(0.0, slopeStep.y)) - groundElevationAt(p - vec2(0.0, slopeStep.y))
+  ) / (2.0 * slopeStep);
 
   vec3 warm = vec3(1.0, 0.94, 0.8);
   vec3 pebbles = pebbleColor(p, 1.0);
@@ -103,11 +121,16 @@ void main() {
 
   // Beaches come and go along the bank: none in places, wide in others.
   float beach = smoothstep(0.5, 0.64, fbm(p * 0.3 + 5.0));
-  float shoreWidth = 0.95 * beach * (0.7 + 0.5 * mid);
-  float grassMix = smoothstep(shoreWidth * 0.6, shoreWidth * 0.6 + 0.1 + 0.4 * beach, inland + (mid - 0.5) * 0.12);
+  float shoreWidth = 0.95 * beach * (0.7 + 0.5 * edgeNoise);
+  float grassMix = smoothstep(shoreWidth * 0.6, shoreWidth * 0.6 + 0.1 + 0.4 * beach, inland + (edgeNoise - 0.5) * 0.12);
   float wetness = (1.0 - smoothstep(0.0, 0.3, inland)) * (0.35 + 0.65 * beach);
   vec3 lawn = grassColor(p, inland, big, mid) * (1.0 - 0.16 * wetness);
   vec3 bank = mix(mix(shore, wetShore, wetness), lawn, grassMix);
+
+  // The cut face of the bank is bare earth where it is steep.
+  vec3 soil = mix(vec3(0.43, 0.34, 0.22), pebbles * vec3(0.95, 0.85, 0.7), 0.35) * (0.8 + 0.4 * big);
+  float face = smoothstep(0.45, 1.2, length(groundGradient)) * smoothstep(0.03, -0.02, depth);
+  bank = mix(bank, soil, face * 0.8);
 
   // Flowers scattered on the grass.
   vec2 flowerCell = floor(p * 6.5);
@@ -129,7 +152,10 @@ void main() {
   float crowding = nearbyRock(p);
   ground *= 1.0 - 0.4 * smoothstep(0.0, 0.2, crowding) * (1.0 - smoothstep(0.0, 0.03, height));
 
-  float lit = sunLight(p, height);
+  float lit = sunLight(p, elevationFrom(depth + terrain.a, height));
+  vec3 light = normalize(vec3(uSun.xy, uSun.z));
+  vec3 groundNormal = normalize(vec3(-groundGradient, 1.0));
+  ground *= mix(1.0, clamp(dot(groundNormal, light) / light.z, 0.35, 1.3), 0.85);
   vec3 color = ground;
 
   if (height > 0.003) {
@@ -159,7 +185,6 @@ void main() {
     float splash = 1.0 - smoothstep(0.0, 0.09, abs(depth + 0.03));
     albedo *= 1.0 - 0.32 * splash;
 
-    vec3 light = normalize(vec3(uSun.xy, uSun.z));
     float diffuse = clamp((dot(normal, light) + 0.25) / 1.25, 0.0, 1.0);
     vec3 ambient = vec3(0.3, 0.37, 0.5) * (0.45 + 0.55 * normal.z);
     vec3 rockColor = albedo * (ambient + vec3(1.02, 0.95, 0.82) * diffuse * 1.0 * mix(0.4, 1.0, lit));
@@ -169,7 +194,7 @@ void main() {
     rockColor *= mix(0.8, 1.0, smoothstep(0.0, 0.1, height)) * mix(0.88, 1.0, smoothstep(0.35, 0.9, normal.z));
 
     // Seen through water a rock is darker and browner than in the air.
-    rockColor *= mix(1.0, 0.5, smoothstep(0.0, 0.15, depth));
+    rockColor *= mix(1.0, 0.72, smoothstep(0.0, 0.15, depth));
 
     float rockEdge = smoothstep(0.003, 0.03, height);
     color = mix(ground, rockColor, rockEdge);

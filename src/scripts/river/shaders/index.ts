@@ -4,7 +4,10 @@ import fullscreenVertex from './fullscreen.vert?raw';
 import tilesFragment from './tiles.frag?raw';
 import bakeFragment from './bake.frag?raw';
 import rippleFragment from './ripple.frag?raw';
+import waterVertex from './water.vert?raw';
 import waterFragment from './water.frag?raw';
+import terrainVertex from './terrain.vert?raw';
+import terrainFragment from './terrain.frag?raw';
 import fishVertex from './fish.vert?raw';
 import fishFragment from './fish.frag?raw';
 import driftVertex from './drift.vert?raw';
@@ -25,7 +28,10 @@ export const shaderSources = {
   tiles: assemble(common, tilesFragment),
   bake: assemble(common, flow, bakeFragment),
   ripple: assemble(common, flow, rippleFragment),
+  waterVertex: assemble(common, waterVertex),
   water: assemble(common, flow, waterFragment),
+  terrainVertex: assemble(common, terrainVertex),
+  terrainFragment: assemble(common, terrainFragment),
   fishVertex: assemble(common, fishVertex),
   fishFragment: assemble(common, fishFragment),
   driftVertex: assemble(common, driftVertex),

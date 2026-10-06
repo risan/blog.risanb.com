@@ -5,6 +5,9 @@ import { mulberry32, type Vec2, type World } from './world.ts';
 // Per item: x, y, angle, size, kind (0 yellow-green leaf, 1 pale yellow, 2 olive, 3 petal, 4 autumn orange).
 export const DRIFT_INSTANCE_FLOATS = 5;
 
+// How far past either end of the river an item is spawned and recycled, so it never pops in view.
+const OFF_WORLD_MARGIN = 0.4;
+
 export interface Drift {
   count: number;
   update(dt: number, time: number): void;
@@ -40,19 +43,16 @@ export function createDrift(world: World, seed: number, count: number): Drift {
   }
 
   function place(index: number, atUpstreamEdge: boolean) {
-    world.randomWaterPoint(random, 0.3, point);
+    if (atUpstreamEdge) {
+      world.upstreamWaterPoint(random, 0.3, point);
+      point.x -= world.course.x * OFF_WORLD_MARGIN;
+      point.y -= world.course.y * OFF_WORLD_MARGIN;
+    } else {
+      world.randomWaterPoint(random, 0.3, point);
+    }
+
     x[index] = point.x;
     y[index] = point.y;
-    if (atUpstreamEdge) {
-      x[index] = -0.4;
-      for (let probe = 0; probe < 40; probe += 1) {
-        const row = random() * world.height;
-        if (world.depthAt(0.1, row) > 0.3) {
-          y[index] = row;
-          break;
-        }
-      }
-    }
 
     angle[index] = random() * Math.PI * 2;
     spin[index] = (random() - 0.5) * 0.9;
@@ -74,7 +74,7 @@ export function createDrift(world: World, seed: number, count: number): Drift {
         const speed = Math.hypot(flow.x, flow.y);
         let nextX = x[index] + flow.x * drag * dt;
         let nextY = y[index] + (flow.y * drag + sideways[index] * (0.4 + speed)) * dt;
-        if (!world.isWater(nextX, nextY) && nextX > 0.5) {
+        if (!world.isWater(nextX, nextY) && world.alongAt(nextX, nextY) > world.alongRange[0] + 0.5) {
           // Stranded on the bank or a rock: nudge towards deeper water.
           const gx = world.depthAt(x[index] + 0.15, y[index]) - world.depthAt(x[index] - 0.15, y[index]);
           const gy = world.depthAt(x[index], y[index] + 0.15) - world.depthAt(x[index], y[index] - 0.15);
@@ -86,7 +86,7 @@ export function createDrift(world: World, seed: number, count: number): Drift {
         x[index] = nextX;
         y[index] = nextY;
         angle[index] += spin[index] * dt * (0.4 + speed * 1.4);
-        if (x[index] > world.width + 0.4) {
+        if (world.alongAt(x[index], y[index]) > world.alongRange[1] + OFF_WORLD_MARGIN) {
           place(index, true);
         }
       }

@@ -32,5 +32,10 @@ void main() {
   leafColor *= vec3(0.94 + 0.12 * variation, 1.0, 0.9 + 0.2 * variation);
   vec3 ribColor = vec3(0.5, 0.64, 0.3);
   vec3 color = mix(leafColor, ribColor, rib * 0.7) * (0.88 + 0.12 * along);
-  outColor = vec4(color, 1.0) * mask;
+  // Drawn without blending: the mask becomes edge coverage on a multisampled canvas.
+  if (mask < 0.35) {
+    discard;
+  }
+
+  outColor = vec4(color, mask);
 }

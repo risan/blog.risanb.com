@@ -1,18 +1,14 @@
 // Pointer input: a tap drops a ripple, dragging stirs the water along the path. Positions are
-// turned into world coordinates, undoing the quarter turn used for portrait canvases.
+// turned into the point of the water surface under the pointer.
 
-export interface ViewShape {
-  worldWidth: number;
-  worldHeight: number;
-  portrait: boolean;
-}
+import { screenToWater, type Camera } from './camera.ts';
 
 export type Stir = (x: number, y: number, strength: number) => void;
 
 const SPACING = 0.14;
 const MAX_POINTS_PER_EVENT = 8;
 
-export function attachInput(canvas: HTMLCanvasElement, view: () => ViewShape, stir: Stir): void {
+export function attachInput(canvas: HTMLCanvasElement, camera: () => Camera, stir: Stir): void {
   let activePointer = -1;
   let lastX = 0;
   let lastY = 0;
@@ -20,16 +16,7 @@ export function attachInput(canvas: HTMLCanvasElement, view: () => ViewShape, st
 
   function toWorld(event: PointerEvent) {
     const rect = canvas.getBoundingClientRect();
-    const screenX = (event.clientX - rect.left) / rect.width;
-    const screenY = (event.clientY - rect.top) / rect.height;
-    const shape = view();
-    if (shape.portrait) {
-      world.x = screenY * shape.worldWidth;
-      world.y = screenX * shape.worldHeight;
-    } else {
-      world.x = screenX * shape.worldWidth;
-      world.y = screenY * shape.worldHeight;
-    }
+    screenToWater(camera(), (event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height, world);
   }
 
   function onDown(event: PointerEvent) {

@@ -1,7 +1,9 @@
 // Owns the GL context and the frame loop. world.ts, fish.ts and drift.ts decide what happens;
-// this file only draws it. Static things (ground, banks, rocks, shadows) are baked once per
-// layout; every frame draws the water, the fish, floating leaves and swaying grass.
+// this file only draws it. Static things (ground colour, shadows) are baked once per layout as a
+// top-down map. Every frame draws a tilted orthographic view of it: the terrain mesh with its
+// banks and rocks, the water surface, floating leaves, and standing grass and ferns.
 
+import { createCamera, NEAR_MARGIN, type Camera } from './camera.ts';
 import { createDrift, DRIFT_INSTANCE_FLOATS, type Drift } from './drift.ts';
 import { createFishSim, FISH_INSTANCE_FLOATS, type FishSim } from './fish.ts';
 import {
@@ -16,12 +18,12 @@ import {
   type Program,
   type Target,
 } from './gl.ts';
-import { attachInput, type ViewShape } from './input.ts';
+import { attachInput } from './input.ts';
 import { createQualityGovernor } from './quality.ts';
 import { createRipples, type Ripples } from './ripples.ts';
 import { shaderSources } from './shaders/index.ts';
 import { FROND_FLOATS, scatterFerns, scatterTufts, TUFT_FLOATS } from './tufts.ts';
-import { CHANNEL_SPEED, createWorld, FLOW_WAVES, GUST_TERMS, type World } from './world.ts';
+import { BANK_HEIGHT, BANK_SOFTNESS, CHANNEL_SPEED, createWorld, FLOW_WAVES, GUST_TERMS, type World } from './world.ts';
 
 export interface RiverScene {
   start(): void;
@@ -33,15 +35,33 @@ export interface RiverScene {
 interface Tier {
   pixelRatioCap: number;
   fishScale: number;
-  rippleCells: number;
-  grassTufts: number;
-  ferns: number;
+  // Metres between the vertices of the terrain mesh.
+  terrainSpacing: number;
+  rippleCellsPerMetre: number;
+  grassTuftsPerSquareMetre: number;
+  fernsPerSquareMetre: number;
   grassShadows: boolean;
 }
 
 const TIERS: Record<'high' | 'low', Tier> = {
-  high: { pixelRatioCap: 1.5, fishScale: 1, rippleCells: 256, grassTufts: 4500, ferns: 24, grassShadows: true },
-  low: { pixelRatioCap: 1.25, fishScale: 0.75, rippleCells: 128, grassTufts: 1500, ferns: 10, grassShadows: false },
+  high: {
+    pixelRatioCap: 1.5,
+    fishScale: 1,
+    terrainSpacing: 0.05,
+    rippleCellsPerMetre: 18,
+    grassTuftsPerSquareMetre: 34,
+    fernsPerSquareMetre: 0.18,
+    grassShadows: true,
+  },
+  low: {
+    pixelRatioCap: 1.25,
+    fishScale: 0.75,
+    terrainSpacing: 0.08,
+    rippleCellsPerMetre: 10,
+    grassTuftsPerSquareMetre: 11,
+    fernsPerSquareMetre: 0.075,
+    grassShadows: false,
+  },
 };
 
 const TEXTURE_URLS = {
@@ -51,10 +71,22 @@ const TEXTURE_URLS = {
   rock: '/river/rock.webp',
 };
 
+// Metres across the screen's short side: the height of a landscape frame, the width of a portrait one.
 const LANDSCAPE_SPAN = 7;
 const PORTRAIT_SPAN = 5.2;
+// Angle between the river and the screen's right-hand direction, measured in the ground plane.
+const LANDSCAPE_COURSE_ANGLE = (35 * Math.PI) / 180;
+const PORTRAIT_COURSE_ANGLE = (65 * Math.PI) / 180;
 const WORLD_SEED = 7;
 const MAX_BAKE_SIDE = 2048;
+const MAX_FISH_LAYER_SIDE = 2048;
+const MAX_RIPPLE_SIDE = 384;
+const MAX_TERRAIN_VERTICES = 120000;
+// Cells of the baked world grid per metre. The world is larger than the frame, so this keeps
+// building it quick on a slow phone.
+const WORLD_CELLS_PER_METRE = 24;
+// Index of refraction of water, for the shift of the bed under the surface.
+const WATER_INDEX = 1.33;
 const FISH_SEGMENTS = 24;
 const BLADES_PER_TUFT = 16;
 const FROND_SEGMENTS = 14;
@@ -62,21 +94,40 @@ const MAX_DRIFT = 7;
 const FRAME_COUNTER_EVERY = 15;
 
 interface Layout {
-  portrait: boolean;
+  camera: Camera;
   cssWidth: number;
   cssHeight: number;
-  worldWidth: number;
-  worldHeight: number;
+  // River width, meander and rocks scale with this: the short side of the frame in metres.
+  riverScale: number;
 }
 
 function measureLayout(canvas: HTMLCanvasElement): Layout {
   const cssWidth = Math.max(1, canvas.clientWidth);
   const cssHeight = Math.max(1, canvas.clientHeight);
   const portrait = cssHeight > cssWidth * 1.02;
-  const worldHeight = portrait ? PORTRAIT_SPAN : LANDSCAPE_SPAN;
-  const worldWidth = portrait ? (PORTRAIT_SPAN * cssHeight) / cssWidth : (LANDSCAPE_SPAN * cssWidth) / cssHeight;
+  const riverScale = portrait ? PORTRAIT_SPAN : LANDSCAPE_SPAN;
+  const viewWidth = portrait ? PORTRAIT_SPAN : (LANDSCAPE_SPAN * cssWidth) / cssHeight;
+  const viewHeight = portrait ? (PORTRAIT_SPAN * cssHeight) / cssWidth : LANDSCAPE_SPAN;
 
-  return { portrait, cssWidth, cssHeight, worldWidth, worldHeight };
+  return { camera: createCamera({ portrait, viewWidth, viewHeight }), cssWidth, cssHeight, riverScale };
+}
+
+// The river runs diagonally across the frame, from the top left towards the bottom right.
+function createSceneWorld(layout: Layout): World {
+  const { camera } = layout;
+  const bend = camera.portrait ? PORTRAIT_COURSE_ANGLE : LANDSCAPE_COURSE_ANGLE;
+  const courseX = camera.across.x * Math.cos(bend) + camera.toward.x * Math.sin(bend);
+  const courseY = camera.across.y * Math.cos(bend) + camera.toward.y * Math.sin(bend);
+
+  return createWorld({
+    seed: WORLD_SEED,
+    width: camera.worldWidth,
+    height: camera.worldHeight,
+    cellsPerMetre: WORLD_CELLS_PER_METRE,
+    courseAngle: Math.atan2(courseY, courseX),
+    riverScale: layout.riverScale,
+    nearEdge: { toward: camera.toward, margin: NEAR_MARGIN },
+  });
 }
 
 async function loadImage(url: string): Promise<HTMLImageElement> {
@@ -90,8 +141,8 @@ async function loadImage(url: string): Promise<HTMLImageElement> {
 export async function createRiverScene(canvas: HTMLCanvasElement): Promise<RiverScene> {
   const context = canvas.getContext('webgl2', {
     alpha: false,
-    antialias: false,
-    depth: false,
+    antialias: true,
+    depth: true,
     stencil: false,
     powerPreference: 'high-performance',
   });
@@ -109,6 +160,7 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
   const gustTerms = new Float32Array(6);
   GUST_TERMS.forEach((term, index) => gustTerms.set(term, index * 3));
 
+  // Where the sun stands as seen on screen: to the left (negative x) and behind the scene (negative y).
   const sun = new Float32Array(3);
   const sunOnScreen = { x: -0.62, y: -0.78 };
   const sunTan = 1.8;
@@ -116,7 +168,7 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
   let tierName: 'high' | 'low' = window.matchMedia('(pointer: coarse)').matches ? 'low' : 'high';
   let renderScale = 1;
   let layout = measureLayout(canvas);
-  let world: World = createWorld({ seed: WORLD_SEED, width: layout.worldWidth, height: layout.worldHeight });
+  let world: World = createSceneWorld(layout);
   let fishSim: FishSim;
   let drift: Drift;
 
@@ -124,6 +176,11 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
   let terrainTexture: WebGLTexture;
   let foamTexture: WebGLTexture;
   let groundTarget: Target | undefined;
+  let terrainVao: WebGLVertexArrayObject | undefined;
+  let terrainIndices: WebGLBuffer | undefined;
+  let terrainIndexCount = 0;
+  let terrainColumns = 0;
+  let terrainRows = 0;
   let fishTarget: Target | undefined;
   let ripples: Ripples | null;
   let emptyRipple: WebGLTexture;
@@ -166,16 +223,16 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
   }
 
   function updateSun() {
-    const x = layout.portrait ? sunOnScreen.y : sunOnScreen.x;
-    const y = layout.portrait ? sunOnScreen.x : sunOnScreen.y;
-    sun[0] = x;
-    sun[1] = y;
+    const { across, toward } = layout.camera;
+    sun[0] = across.x * sunOnScreen.x + toward.x * sunOnScreen.y;
+    sun[1] = across.y * sunOnScreen.x + toward.y * sunOnScreen.y;
     sun[2] = sunTan;
   }
 
   function bindWorld(program: Program) {
     gl.uniform2f(program.uniforms.uWorldSize, world.width, world.height);
-    gl.uniform1f(program.uniforms.uPortrait, layout.portrait ? 1 : 0);
+    gl.uniform2f(program.uniforms.uBank, BANK_HEIGHT, BANK_SOFTNESS);
+    gl.uniform2f(program.uniforms.uCourse, world.course.x, world.course.y);
     gl.uniform4fv(program.uniforms.uFlowWaves, flowWaves);
     gl.uniform3fv(program.uniforms.uGust, gustTerms);
     gl.uniform1f(program.uniforms.uChannelSpeed, CHANNEL_SPEED);
@@ -183,9 +240,26 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     gl.uniform1i(program.uniforms.uTerrain, 0);
   }
 
+  // The camera as the shaders use it: the matrix, the screen's axes in the ground plane, the
+  // direction to the viewer, and how far the bed seems shifted away per metre of water depth.
+  function bindView(program: Program) {
+    const { camera } = layout;
+    gl.uniformMatrix4fv(program.uniforms.uViewProjection, false, camera.viewProjection);
+    gl.uniform2f(program.uniforms.uAcross, camera.across.x, camera.across.y);
+    gl.uniform2f(program.uniforms.uToward, camera.toward.x, camera.toward.y);
+    gl.uniform3f(
+      program.uniforms.uViewDir,
+      camera.toward.x * Math.cos(camera.elevation),
+      camera.toward.y * Math.cos(camera.elevation),
+      Math.sin(camera.elevation),
+    );
+    gl.uniform1f(program.uniforms.uRefraction, Math.tan(Math.asin(Math.cos(camera.elevation) / WATER_INDEX)));
+  }
+
   function useProgram(program: Program) {
     gl.useProgram(program.program);
     bindWorld(program);
+    bindView(program);
   }
 
   function buildPrograms() {
@@ -194,7 +268,8 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
       tiles: createProgram(gl, vertex, shaderSources.tiles, 'tiles'),
       bake: createProgram(gl, vertex, shaderSources.bake, 'bake'),
       ripple: createProgram(gl, vertex, shaderSources.ripple, 'ripple'),
-      water: createProgram(gl, vertex, shaderSources.water, 'water'),
+      terrain: createProgram(gl, shaderSources.terrainVertex, shaderSources.terrainFragment, 'terrain'),
+      water: createProgram(gl, shaderSources.waterVertex, shaderSources.water, 'water'),
       fish: createProgram(gl, shaderSources.fishVertex, shaderSources.fishFragment, 'fish'),
       drift: createProgram(gl, shaderSources.driftVertex, shaderSources.driftFragment, 'drift'),
       grass: createProgram(gl, shaderSources.grassVertex, shaderSources.grassFragment, 'grass'),
@@ -334,7 +409,9 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
   }
 
   function uploadTufts() {
-    const tufts = scatterTufts(world, WORLD_SEED + 1, tier().grassTufts);
+    const area = world.width * world.height;
+    const scale = layout.riverScale / LANDSCAPE_SPAN;
+    const tufts = scatterTufts(world, WORLD_SEED + 1, Math.round(tier().grassTuftsPerSquareMetre * area), scale);
     grassTuftCount = tufts.length / TUFT_FLOATS;
     if (tuftBuffer) {
       gl.deleteBuffer(tuftBuffer);
@@ -344,12 +421,17 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     gl.bindVertexArray(grassVao);
     gl.bindBuffer(gl.ARRAY_BUFFER, tuftBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, tufts, gl.STATIC_DRAW);
-    const location = gl.getAttribLocation(programs.grass.program, 'aTuft');
-    gl.enableVertexAttribArray(location);
-    gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(location, 1);
+    const tuftStride = TUFT_FLOATS * 4;
+    const tuftLocation = gl.getAttribLocation(programs.grass.program, 'aTuft');
+    gl.enableVertexAttribArray(tuftLocation);
+    gl.vertexAttribPointer(tuftLocation, 4, gl.FLOAT, false, tuftStride, 0);
+    gl.vertexAttribDivisor(tuftLocation, 1);
+    const rootHeightLocation = gl.getAttribLocation(programs.grass.program, 'aRootHeight');
+    gl.enableVertexAttribArray(rootHeightLocation);
+    gl.vertexAttribPointer(rootHeightLocation, 1, gl.FLOAT, false, tuftStride, 16);
+    gl.vertexAttribDivisor(rootHeightLocation, 1);
 
-    const fronds = scatterFerns(world, WORLD_SEED + 3, tier().ferns);
+    const fronds = scatterFerns(world, WORLD_SEED + 3, Math.round(tier().fernsPerSquareMetre * area), scale);
     frondCount = fronds.length / FROND_FLOATS;
     if (frondBuffer) {
       gl.deleteBuffer(frondBuffer);
@@ -369,12 +451,54 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     gl.bindVertexArray(null);
   }
 
+  // A grid of triangles over the world. Its vertices are generated in the vertex shader; only
+  // the indices are stored.
+  function buildTerrainMesh() {
+    const spacing = Math.max(tier().terrainSpacing, Math.sqrt((world.width * world.height) / MAX_TERRAIN_VERTICES));
+    terrainColumns = Math.ceil(world.width / spacing) + 1;
+    terrainRows = Math.ceil(world.height / spacing) + 1;
+    const indices = new Uint32Array((terrainColumns - 1) * (terrainRows - 1) * 6);
+    let offset = 0;
+    for (let row = 0; row < terrainRows - 1; row += 1) {
+      for (let column = 0; column < terrainColumns - 1; column += 1) {
+        const topLeft = row * terrainColumns + column;
+        const bottomLeft = topLeft + terrainColumns;
+        indices.set([topLeft, bottomLeft, topLeft + 1, topLeft + 1, bottomLeft, bottomLeft + 1], offset);
+        offset += 6;
+      }
+    }
+
+    terrainIndexCount = indices.length;
+    if (terrainVao) {
+      gl.deleteVertexArray(terrainVao);
+    }
+
+    if (terrainIndices) {
+      gl.deleteBuffer(terrainIndices);
+    }
+
+    terrainVao = required(gl.createVertexArray(), 'vertex array');
+    terrainIndices = required(gl.createBuffer(), 'buffer');
+    gl.bindVertexArray(terrainVao);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, terrainIndices);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    gl.bindVertexArray(null);
+  }
+
+  // The ground map has the same pixels per metre as the frame across its width, in both directions.
+  function bakeSize(forLayout: Layout): { width: number; height: number } {
+    const { camera } = forLayout;
+    const pixelsPerMetre = (baseRatio() * forLayout.cssWidth) / (2 * camera.halfWidth);
+    const longScale = Math.min(1, MAX_BAKE_SIDE / (Math.max(camera.worldWidth, camera.worldHeight) * pixelsPerMetre));
+
+    return {
+      width: Math.round(camera.worldWidth * pixelsPerMetre * longScale),
+      height: Math.round(camera.worldHeight * pixelsPerMetre * longScale),
+    };
+  }
+
   function bakeGround() {
-    const pixelRatio = baseRatio();
-    const worldPixelsLong = (layout.portrait ? layout.cssHeight : layout.cssWidth) * pixelRatio;
-    const longScale = Math.min(1, MAX_BAKE_SIDE / worldPixelsLong);
-    bakeWidth = Math.round((layout.portrait ? layout.cssHeight : layout.cssWidth) * pixelRatio * longScale);
-    bakeHeight = Math.round((layout.portrait ? layout.cssWidth : layout.cssHeight) * pixelRatio * longScale);
+    ({ width: bakeWidth, height: bakeHeight } = bakeSize(layout));
 
     if (groundTarget) {
       deleteTarget(gl, groundTarget);
@@ -391,6 +515,7 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     gl.bindFramebuffer(gl.FRAMEBUFFER, groundTarget.framebuffer);
     gl.viewport(0, 0, bakeWidth, bakeHeight);
     gl.disable(gl.BLEND);
+    gl.disable(gl.DEPTH_TEST);
     const bake = programs.bake;
     useProgram(bake);
     gl.uniform3fv(bake.uniforms.uSun, sun);
@@ -415,13 +540,14 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
       return;
     }
 
-    const cells = tier().rippleCells;
-    const long = Math.max(world.width, world.height);
-    const cellSize = long / cells;
+    const cellsPerMetre = Math.min(
+      tier().rippleCellsPerMetre,
+      MAX_RIPPLE_SIDE / Math.max(world.width, world.height),
+    );
     try {
       ripples = createRipples(gl, programs.ripple, {
-        width: Math.max(8, Math.round(world.width / cellSize)),
-        height: Math.max(8, Math.round(world.height / cellSize)),
+        width: Math.max(8, Math.round(world.width * cellsPerMetre)),
+        height: Math.max(8, Math.round(world.height * cellsPerMetre)),
         bindWorld,
       });
     } catch (error) {
@@ -434,9 +560,13 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
       deleteTarget(gl, fishTarget);
     }
 
+    // The fish are drawn from above over the whole world, at the frame's pixels per metre.
+    const { camera } = layout;
+    const pixelsPerMetre = (canvas.width / (2 * camera.halfWidth)) * tier().fishScale;
+    const scale = Math.min(1, MAX_FISH_LAYER_SIDE / (Math.max(camera.worldWidth, camera.worldHeight) * pixelsPerMetre));
     fishTarget = createTarget(gl, {
-      width: Math.max(2, Math.round(canvas.width * tier().fishScale)),
-      height: Math.max(2, Math.round(canvas.height * tier().fishScale)),
+      width: Math.max(2, Math.round(camera.worldWidth * pixelsPerMetre * scale)),
+      height: Math.max(2, Math.round(camera.worldHeight * pixelsPerMetre * scale)),
       internalFormat: gl.RGBA8,
       format: gl.RGBA,
       type: gl.UNSIGNED_BYTE,
@@ -446,9 +576,10 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
   function buildWorldState() {
     updateSun();
     uploadWorld();
-    fishSim = createFishSim(world, WORLD_SEED, { trout: 3, grayling: 2, minnows: 12 }, layout.portrait ? 0.88 : 1);
+    fishSim = createFishSim(world, WORLD_SEED, { trout: 3, grayling: 2, minnows: 12 }, layout.camera.portrait ? 0.88 : 1);
     drift = createDrift(world, WORLD_SEED + 2, MAX_DRIFT);
     uploadTufts();
+    buildTerrainMesh();
     bakeGround();
     buildRipples();
   }
@@ -510,10 +641,35 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     gl.bindVertexArray(null);
   }
 
-  function drawWater() {
+  // Everything below draws to the canvas with a depth buffer: land hides the water behind it,
+  // and the water hides what lies under the surface.
+  function beginScreenPass() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.depthMask(true);
     gl.disable(gl.BLEND);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  }
+
+  function drawTerrain() {
+    const program = programs.terrain;
+    useProgram(program);
+    bindTexture(gl, 1, required(groundTarget, 'ground').texture);
+    bindTexture(gl, 2, imageTextures.rock);
+    bindTexture(gl, 3, imageTextures.pebbles);
+    gl.uniform1i(program.uniforms.uGround, 1);
+    gl.uniform1i(program.uniforms.uRock, 2);
+    gl.uniform1i(program.uniforms.uPebbles, 3);
+    gl.uniform3fv(program.uniforms.uSun, sun);
+    gl.uniform2i(program.uniforms.uGrid, terrainColumns, terrainRows);
+    gl.bindVertexArray(terrainVao ?? null);
+    gl.drawElements(gl.TRIANGLES, terrainIndexCount, gl.UNSIGNED_INT, 0);
+    gl.bindVertexArray(null);
+  }
+
+  function drawWater() {
     const water = programs.water;
     useProgram(water);
     bindTexture(gl, 1, required(groundTarget, 'ground').texture);
@@ -529,15 +685,15 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     gl.uniform1i(water.uniforms.uRipple, 5);
     gl.uniform1i(water.uniforms.uFish, 6);
     gl.uniform3fv(water.uniforms.uSun, sun);
-    gl.uniform2f(water.uniforms.uRes, canvas.width, canvas.height);
     gl.uniform1f(water.uniforms.uTime, time);
-    drawFullscreen(gl);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
   function drawDrift() {
     const count = drift.pack(driftData);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
     gl.bindVertexArray(driftVao);
     gl.bindBuffer(gl.ARRAY_BUFFER, driftInstances);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, driftData, 0, count * DRIFT_INSTANCE_FLOATS);
@@ -550,42 +706,66 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count);
 
     gl.bindVertexArray(null);
+    gl.depthMask(true);
   }
 
   function drawGrass() {
-    const program = programs.grass;
-    useProgram(program);
-    bindTexture(gl, 1, required(groundTarget, 'ground').texture);
-    gl.uniform1i(program.uniforms.uGround, 1);
-    gl.uniform3fv(program.uniforms.uSun, sun);
-    gl.uniform1f(program.uniforms.uTime, time);
-    gl.bindVertexArray(grassVao);
+    const grass = programs.grass;
+    const fern = programs.fern;
+    const bladeIndices = BLADES_PER_TUFT * 9;
+    const frondVertices = (FROND_SEGMENTS + 1) * 2;
+
+    // Shadows first, blended over the ground without writing depth, so blades stand over them.
     if (tier().grassShadows) {
-      gl.uniform1f(program.uniforms.uShadow, 1);
-      gl.drawElementsInstanced(gl.TRIANGLES, BLADES_PER_TUFT * 9, gl.UNSIGNED_SHORT, 0, grassTuftCount);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false);
+      useProgram(grass);
+      bindTexture(gl, 1, required(groundTarget, 'ground').texture);
+      gl.uniform1i(grass.uniforms.uGround, 1);
+      gl.uniform3fv(grass.uniforms.uSun, sun);
+      gl.uniform1f(grass.uniforms.uTime, time);
+      gl.uniform1f(grass.uniforms.uShadow, 1);
+      gl.bindVertexArray(grassVao);
+      gl.drawElementsInstanced(gl.TRIANGLES, bladeIndices, gl.UNSIGNED_SHORT, 0, grassTuftCount);
+
+      useProgram(fern);
+      gl.uniform3fv(fern.uniforms.uSun, sun);
+      gl.uniform1f(fern.uniforms.uTime, time);
+      gl.uniform1f(fern.uniforms.uShadow, 1);
+      gl.bindVertexArray(fernVao);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, frondVertices, frondCount);
+      gl.depthMask(true);
     }
 
-    gl.uniform1f(program.uniforms.uShadow, 0);
-    gl.drawElementsInstanced(gl.TRIANGLES, BLADES_PER_TUFT * 9, gl.UNSIGNED_SHORT, 0, grassTuftCount);
+    // The solid pass: depth decides what hides what; the edges fade through multisampled coverage.
+    gl.disable(gl.BLEND);
+    gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+    useProgram(grass);
+    bindTexture(gl, 1, required(groundTarget, 'ground').texture);
+    gl.uniform1i(grass.uniforms.uGround, 1);
+    gl.uniform3fv(grass.uniforms.uSun, sun);
+    gl.uniform1f(grass.uniforms.uTime, time);
+    gl.uniform1f(grass.uniforms.uShadow, 0);
+    gl.bindVertexArray(grassVao);
+    gl.drawElementsInstanced(gl.TRIANGLES, bladeIndices, gl.UNSIGNED_SHORT, 0, grassTuftCount);
 
-    const fern = programs.fern;
     useProgram(fern);
     gl.uniform3fv(fern.uniforms.uSun, sun);
     gl.uniform1f(fern.uniforms.uTime, time);
-    gl.bindVertexArray(fernVao);
-    if (tier().grassShadows) {
-      gl.uniform1f(fern.uniforms.uShadow, 1);
-      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, (FROND_SEGMENTS + 1) * 2, frondCount);
-    }
-
     gl.uniform1f(fern.uniforms.uShadow, 0);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, (FROND_SEGMENTS + 1) * 2, frondCount);
+    gl.bindVertexArray(fernVao);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, frondVertices, frondCount);
     gl.bindVertexArray(null);
+    gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
   }
 
   function renderFrame(dt: number) {
+    gl.disable(gl.DEPTH_TEST);
     ripples?.step(dt, time);
     drawFish();
+    beginScreenPass();
+    drawTerrain();
     drawWater();
     drawDrift();
     drawGrass();
@@ -642,17 +822,16 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     }
 
     const next = measureLayout(canvas);
-    const previousAspect = layout.worldWidth / layout.worldHeight;
-    const nextAspect = next.worldWidth / next.worldHeight;
-    const worldChanged = next.portrait !== layout.portrait || Math.abs(nextAspect / previousAspect - 1) > 0.1;
-    const pixelRatio = baseRatio();
-    const wantedBakeWidth = (next.portrait ? next.cssHeight : next.cssWidth) * pixelRatio;
-    const bakeChanged = Math.abs(wantedBakeWidth / Math.max(bakeWidth, 1) - 1) > 0.1 && bakeWidth < MAX_BAKE_SIDE;
+    const previousAspect = layout.camera.halfWidth / layout.camera.halfHeight;
+    const nextAspect = next.camera.halfWidth / next.camera.halfHeight;
+    const worldChanged = next.camera.portrait !== layout.camera.portrait || Math.abs(nextAspect / previousAspect - 1) > 0.1;
+    const wantedBakeWidth = bakeSize(next).width;
+    const bakeChanged = Math.abs(wantedBakeWidth / Math.max(bakeWidth, 1) - 1) > 0.1;
     layout = next;
-    const bufferChanged = resizeBuffer(tierChanged);
+    const bufferChanged = resizeBuffer(tierChanged || worldChanged);
 
     if (worldChanged) {
-      world = createWorld({ seed: WORLD_SEED, width: layout.worldWidth, height: layout.worldHeight });
+      world = createSceneWorld(layout);
       gl.deleteTexture(terrainTexture);
       gl.deleteTexture(foamTexture);
       buildWorldState();
@@ -662,6 +841,7 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
       buildRipples();
       if (tierChanged) {
         uploadTufts();
+        buildTerrainMesh();
       }
     }
 
@@ -704,7 +884,7 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
 
   attachInput(
     canvas,
-    (): ViewShape => ({ worldWidth: world.width, worldHeight: world.height, portrait: layout.portrait }),
+    () => layout.camera,
     (x, y, strength) => scene.rippleAt(x, y, strength),
   );
 
@@ -718,6 +898,8 @@ export async function createRiverScene(canvas: HTMLCanvasElement): Promise<River
     // Handles from the lost context are dead; forget them instead of deleting them.
     groundTarget = undefined;
     fishTarget = undefined;
+    terrainVao = undefined;
+    terrainIndices = undefined;
     tuftBuffer = undefined;
     frondBuffer = undefined;
     ripples = null;

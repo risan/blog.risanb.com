@@ -1,4 +1,5 @@
-// Fish are flat strips seen from above. The vertex shader bends the strip into a swimming
+// Fish are flat strips drawn from straight above into a world-space layer that the water pass
+// looks through at an angle. The vertex shader bends the strip into a swimming
 // S-wave that grows towards the tail (as the koi do in the reference pond), and the
 // fragment shader paints the body, fins and markings in body coordinates.
 in vec2 aCorner; // x: 0 head .. 1 tail, y: -1 .. 1 across
@@ -24,9 +25,7 @@ void main() {
   float s = sin(aPose.z);
   vec2 world = aPose.xy + vec2(c * local.x - s * local.y, s * local.x + c * local.y);
 
-  vec2 unit = world / uWorldSize;
-  vec2 down = uPortrait > 0.5 ? unit.yx : unit;
-  gl_Position = vec4(down.x * 2.0 - 1.0, 1.0 - down.y * 2.0, 0.0, 1.0);
+  gl_Position = vec4(world / uWorldSize * 2.0 - 1.0, 0.0, 1.0);
 
   vBody = aCorner;
   vSpecies = aState.x;

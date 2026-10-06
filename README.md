@@ -41,7 +41,7 @@ npm run build:only   # build without the type-check
 npm run preview      # serve dist/
 npm run check        # astro check + vue-tsc
 npm run check:site   # verify dist/ (links, redirects, legacy URLs)
-npm run test:river   # unit tests for the homepage river's world and fish logic
+npm run test:river   # unit tests for the homepage river's world, camera, drift and fish logic
 npx wrangler deploy  # ship dist/ to Cloudflare Workers
 ```
 
@@ -58,7 +58,7 @@ src/content.config.ts  the `blog` collection schema
 src/layouts/           BaseLayout + PostLayout
 src/pages/             home, /<slug>/ posts, tags, categories, rss, search.json
 src/lib/               remark/rehype plugins, Shiki theme, text helpers
-src/scripts/river/     the homepage river: raw WebGL2 scene, loaded only near the viewport
+src/scripts/river/     the homepage river: raw WebGL2 scene in a tilted isometric view, loaded only near the viewport
 static/                favicon, robots.txt, _redirects, river/ textures
 scripts/check-site.mjs post-build verification
 wrangler.jsonc         Cloudflare Workers deploy config (static assets only)

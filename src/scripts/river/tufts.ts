@@ -2,15 +2,15 @@
 
 import { mulberry32, type World } from './world.ts';
 
-// Per grass tuft: x, y, size in metres, seed.
-export const TUFT_FLOATS = 4;
+// Per grass tuft: x, y, size in metres, seed, height of the ground above the water.
+export const TUFT_FLOATS = 5;
 // Per fern frond: x, y, length, angle, seed, curl, width scale, unused.
 export const FROND_FLOATS = 8;
 
-export function scatterTufts(world: World, seed: number, count: number): Float32Array {
+// `scale` is the size of the river's surroundings relative to the original scene (riverScale / 7).
+export function scatterTufts(world: World, seed: number, count: number, scale: number): Float32Array {
   const random = mulberry32(seed);
   const tufts = new Float32Array(count * TUFT_FLOATS);
-  const scale = world.height / 7;
   let placed = 0;
 
   for (let attempt = 0; attempt < count * 30 && placed < count; attempt += 1) {
@@ -26,6 +26,7 @@ export function scatterTufts(world: World, seed: number, count: number): Float32
     tufts[offset + 1] = y;
     tufts[offset + 2] = (0.07 + random() * 0.07) * scale;
     tufts[offset + 3] = random() * 100;
+    tufts[offset + 4] = world.elevationAt(x, y);
     placed += 1;
   }
 
@@ -33,9 +34,8 @@ export function scatterTufts(world: World, seed: number, count: number): Float32
 }
 
 // Ferns grow close to the water; a few stand right at the edge so their fronds hang over it.
-export function scatterFerns(world: World, seed: number, clumps: number): Float32Array {
+export function scatterFerns(world: World, seed: number, clumps: number, scale: number): Float32Array {
   const random = mulberry32(seed);
-  const scale = world.height / 7;
   const fronds = new Float32Array(clumps * 9 * FROND_FLOATS);
   let placed = 0;
 
