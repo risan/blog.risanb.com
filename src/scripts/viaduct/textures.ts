@@ -2,7 +2,7 @@
 // scree detail comes from the CC0 photographs in static/river/, flattened to a neutral tone so the
 // vertex colours decide the hue.
 
-import { CanvasTexture, ClampToEdgeWrapping, LinearMipmapLinearFilter, RepeatWrapping, SRGBColorSpace, Texture } from 'three';
+import { CanvasTexture, ClampToEdgeWrapping, LinearMipmapLinearFilter, NoColorSpace, RepeatWrapping, SRGBColorSpace, Texture } from 'three';
 import { mulberry32 } from '../river/world.ts';
 
 function paintCanvas(width: number, height: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
@@ -216,4 +216,162 @@ export function createScreeTexture(anisotropy: number): CanvasTexture {
   }
 
   return finish(canvas, anisotropy);
+}
+
+// Foliage is a colour picture and a separate cut-out mask, not one picture with an alpha channel:
+// transparent pixels would be stored black, and the mipmaps would fade every leaf edge to dark.
+export interface FoliageTexture {
+  map: CanvasTexture;
+  alphaMap: CanvasTexture;
+}
+
+type Brush = (context: CanvasRenderingContext2D, cutOut: boolean) => void;
+
+function paintFoliage(size: number, anisotropy: number, ground: string, paint: (both: (brush: Brush) => void) => void): FoliageTexture {
+  const [colourCanvas, colour] = paintCanvas(size, size);
+  const [maskCanvas, mask] = paintCanvas(size, size);
+  colour.fillStyle = ground;
+  colour.fillRect(0, 0, size, size);
+  mask.fillStyle = '#000';
+  mask.fillRect(0, 0, size, size);
+  paint((brush) => {
+    brush(colour, false);
+    brush(mask, true);
+  });
+
+  const alphaMap = finish(maskCanvas, anisotropy, false);
+  alphaMap.colorSpace = NoColorSpace;
+
+  return { map: finish(colourCanvas, anisotropy, false), alphaMap };
+}
+
+function grey(tone: number, warmth: number): string {
+  const value = Math.round(tone * 255);
+
+  return `rgb(${value}, ${value}, ${Math.round(value * (1 - warmth))})`;
+}
+
+// A spread of small pointed leaves in three layers, dark and deep first, bright on top, thinning
+// toward the edge of the card so a card never ends in a straight line. The colour is neutral grey;
+// the instances tint it.
+export function createLeafTexture(size: number, anisotropy: number): FoliageTexture {
+  const random = mulberry32(61);
+  const leafLength = size * 0.13;
+
+  return paintFoliage(size, anisotropy, 'rgb(96, 96, 80)', (both) => {
+    const layers: [number, number, number][] = [
+      [0.34, 0.5, 0.62],
+      [0.5, 0.7, 0.8],
+      [0.38, 0.95, 1],
+    ];
+    for (const [share, lowTone, highTone] of layers) {
+      const count = Math.round(share * size * 0.33);
+      for (let placed = 0; placed < count; ) {
+        const x = (0.1 + random() * 0.8) * size;
+        const y = (0.1 + random() * 0.8) * size;
+        const edge = Math.hypot(x / size - 0.5, y / size - 0.5) * 2;
+        if (random() > Math.min(1, (1.02 - edge) * 2.4)) {
+          continue;
+        }
+
+        placed += 1;
+        const length = leafLength * (0.7 + random() * 0.6);
+        const angle = random() * Math.PI * 2;
+        const tone = lowTone + (highTone - lowTone) * random();
+        const warmth = random() * 0.22;
+        both((context, cutOut) => {
+          context.save();
+          context.translate(x, y);
+          context.rotate(angle);
+          context.beginPath();
+          context.moveTo(-length / 2, 0);
+          context.quadraticCurveTo(0, -length * 0.36, length / 2, 0);
+          context.quadraticCurveTo(0, length * 0.36, -length / 2, 0);
+          context.closePath();
+          context.fillStyle = cutOut ? '#fff' : grey(tone, warmth);
+          context.fill();
+          if (!cutOut) {
+            context.strokeStyle = 'rgba(20, 24, 12, 0.35)';
+            context.lineWidth = Math.max(1, size / 256);
+            context.stroke();
+            context.beginPath();
+            context.moveTo(-length * 0.45, 0);
+            context.lineTo(length * 0.4, 0);
+            context.strokeStyle = 'rgba(255, 255, 230, 0.22)';
+            context.stroke();
+          }
+
+          context.restore();
+        });
+      }
+    }
+  });
+}
+
+// One spruce twig lying along the card, pointing right, with fine needles on both sides. A small
+// block in the bottom right corner is solid, for the faces that must never be see-through.
+export const NEEDLE_SOLID_UV: [number, number] = [0.98, 0.02];
+
+export function createNeedleTexture(size: number, anisotropy: number): FoliageTexture {
+  const random = mulberry32(73);
+  const unit = size / 256;
+
+  return paintFoliage(size, anisotropy, 'rgb(90, 96, 80)', (both) => {
+    const stemY = (t: number) => size * (0.5 + 0.1 * t * t);
+    const twigs = 60;
+    for (let index = 0; index < twigs; index += 1) {
+      const t = (index + random() * 0.6) / twigs;
+      const baseX = size * (0.04 + 0.9 * t);
+      const baseY = stemY(t);
+      for (const side of [-1, 1]) {
+        const reach = size * (0.34 - 0.27 * t) * (0.8 + random() * 0.4);
+        const angle = side * (0.75 + random() * 0.35);
+        const tipX = baseX + Math.cos(angle) * reach;
+        const tipY = baseY + Math.sin(angle) * reach;
+        both((context, cutOut) => {
+          context.lineCap = 'round';
+          context.strokeStyle = cutOut ? '#fff' : 'rgb(70, 60, 40)';
+          context.lineWidth = 1.6 * unit;
+          context.beginPath();
+          context.moveTo(baseX, baseY);
+          context.lineTo(tipX, tipY);
+          context.stroke();
+        });
+        const needles = 15;
+        for (let needle = 0; needle < needles; needle += 1) {
+          const along = (needle + 0.5) / needles;
+          const x = baseX + (tipX - baseX) * along;
+          const y = baseY + (tipY - baseY) * along;
+          const needleLength = size * (0.075 - 0.03 * along) * (0.8 + random() * 0.4);
+          const tone = 0.5 + 0.5 * random() * (0.6 + 0.4 * along);
+          for (const flank of [-1, 1]) {
+            const direction = angle + flank * (0.65 + random() * 0.4);
+            const needleColour = grey(tone, 0.12 * random());
+            both((context, cutOut) => {
+              context.strokeStyle = cutOut ? '#fff' : needleColour;
+              context.lineWidth = 1.9 * unit;
+              context.beginPath();
+              context.moveTo(x, y);
+              context.lineTo(x + Math.cos(direction) * needleLength, y + Math.sin(direction) * needleLength);
+              context.stroke();
+            });
+          }
+        }
+      }
+    }
+
+    both((context, cutOut) => {
+      context.strokeStyle = cutOut ? '#fff' : 'rgb(80, 66, 44)';
+      context.lineWidth = 3 * unit;
+      context.beginPath();
+      context.moveTo(size * 0.02, stemY(0));
+      for (let step = 1; step <= 20; step += 1) {
+        context.lineTo(size * (0.02 + (0.94 * step) / 20), stemY(step / 20));
+      }
+
+      context.stroke();
+      context.fillStyle = cutOut ? '#fff' : 'rgb(110, 120, 96)';
+      context.fillRect(size * 0.94, size * 0.94, size * 0.06, size * 0.06);
+    });
+  });
 }

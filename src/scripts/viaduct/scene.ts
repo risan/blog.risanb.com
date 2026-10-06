@@ -25,6 +25,7 @@ import {
   SRGBColorSpace,
   WebGLRenderer,
 } from 'three';
+import { toGeometry } from './geometry.ts';
 import { createQualityGovernor } from '../river/quality.ts';
 import { frameForAspect, lookDirection } from './camera.ts';
 import { buildBallast, buildCatenary, buildRails, sleeperPlacements } from './lineMesh.ts';
@@ -69,17 +70,6 @@ const SHADOW_HALF_EXTENT = 135;
 const FRAME_COUNTER_EVERY = 15;
 const GRASS_TEXTURE_URL = '/river/grass.webp';
 const ROCK_TILE_METRES = 8;
-
-function toGeometry(mesh: BuiltMesh): BufferGeometry {
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
-  geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
-  geometry.setAttribute('uv', new BufferAttribute(mesh.uvs, 2));
-  geometry.setAttribute('color', new BufferAttribute(mesh.colors, 3));
-  geometry.setIndex(new BufferAttribute(mesh.indices, 1));
-
-  return geometry;
-}
 
 function terrainGeometry(grid: TerrainGrid): BufferGeometry {
   const geometry = new BufferGeometry();
@@ -197,7 +187,7 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   wallsMesh.castShadow = true;
   wallsMesh.receiveShadow = true;
   scene.add(propsMesh, wallsMesh);
-  for (const mesh of buildVegetation(scenery, tierName === 'high', rockDetail).meshes) {
+  for (const mesh of buildVegetation(scenery, tierName === 'high', rockDetail, anisotropy).meshes) {
     scene.add(mesh);
   }
 
