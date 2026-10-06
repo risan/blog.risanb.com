@@ -1,20 +1,30 @@
-// Shared by every pass. The world is always laid out with the river flowing along +x; on
-// portrait canvases the screen shows it turned so the water runs top to bottom.
+// Shared by every pass. World coordinates are metres: x and y lie in the ground plane, z is up
+// and the water surface is z = 0. The camera looks at the world from a tilted angle and passes
+// that go on screen multiply world positions by uViewProjection.
 uniform vec2 uWorldSize;
-uniform float uPortrait;
+uniform sampler2D uTerrain; // depth, flow x, flow y, rock height
+uniform vec2 uBank; // height of the bank plateau, softness of its lip
 
-// glUv is the screen position in 0..1 with y pointing up, as gl_FragCoord gives it.
-vec2 worldFromScreen(vec2 glUv) {
-  vec2 down = vec2(glUv.x, 1.0 - glUv.y);
+// Slightly muted and warmed; the last step of every pass that shows the ground.
+vec3 grade(vec3 color) {
+  float l = dot(color, vec3(0.299, 0.587, 0.114));
+  color = mix(vec3(l), color, 0.98) * vec3(1.03, 1.0, 0.95);
 
-  return (uPortrait > 0.5 ? down.yx : down) * uWorldSize;
+  return clamp(color, 0.0, 1.0);
 }
 
-vec2 screenFromWorld(vec2 p) {
-  vec2 unit = p / uWorldSize;
-  vec2 down = uPortrait > 0.5 ? unit.yx : unit;
+// Height above the water surface, from the bed depth without rocks and the rock height.
+// world.ts has the same formula (elevationFrom).
+float elevationFrom(float bed, float rockHeight) {
+  float ground = bed > 0.0 ? -bed : uBank.x * (1.0 - exp(bed / uBank.y));
 
-  return vec2(down.x, 1.0 - down.y);
+  return ground + rockHeight;
+}
+
+float elevationAt(vec2 p) {
+  vec4 terrain = textureLod(uTerrain, p / uWorldSize, 0.0);
+
+  return elevationFrom(terrain.r + terrain.a, terrain.a);
 }
 
 float hash12(vec2 p) {

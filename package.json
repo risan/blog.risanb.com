@@ -13,7 +13,7 @@
     "check:astro": "astro check",
     "check:vue": "vue-tsc --noEmit",
     "check:site": "node scripts/check-site.mjs dist",
-    "test:river": "node --test src/scripts/river/world.test.ts src/scripts/river/fish.test.ts src/scripts/river/quality.test.ts"
+    "test:river": "node --test src/scripts/river/world.test.ts src/scripts/river/camera.test.ts src/scripts/river/drift.test.ts src/scripts/river/fish.test.ts src/scripts/river/quality.test.ts"
   },
   "engines": {
     "node": ">=20.3.0"

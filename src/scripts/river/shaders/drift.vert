@@ -1,7 +1,10 @@
 // Leaves and petals floating on the surface. The shadow pass moves each one away from the
-// sun by the water depth beneath it, so the shadow lands on the riverbed, not on the leaf.
-uniform sampler2D uTerrain;
+// sun by the water depth beneath it, and away from the viewer by the refraction shift, so the
+// shadow lands on the riverbed where the water pass shows it, not under the leaf.
+uniform mat4 uViewProjection;
 uniform vec3 uSun;
+uniform vec2 uToward;
+uniform float uRefraction;
 uniform float uShadow;
 
 in vec4 aItem; // world x, world y, angle, size
@@ -19,15 +22,15 @@ const vec2 CORNERS[6] = vec2[6](
 void main() {
   vec2 corner = CORNERS[gl_VertexID];
   float depth = max(textureLod(uTerrain, aItem.xy / uWorldSize, 0.0).r, 0.0);
-  vec2 shift = uShadow > 0.5 ? -uSun.xy * (0.03 + depth * 0.7) : vec2(0.0);
+  vec2 shift = uShadow > 0.5 ? -uSun.xy * (0.03 + depth * 0.7) - uToward * depth * uRefraction : vec2(0.0);
   float c = cos(aItem.z);
   float s = sin(aItem.z);
   vec2 local = corner * aItem.w;
   vec2 world = aItem.xy + shift + vec2(c * local.x - s * local.y, s * local.x + c * local.y);
 
-  vec2 unit = world / uWorldSize;
-  vec2 down = uPortrait > 0.5 ? unit.yx : unit;
-  gl_Position = vec4(down.x * 2.0 - 1.0, 1.0 - down.y * 2.0, 0.0, 1.0);
+  // A hair above the surface, and the shadow just under the leaf, so depth sorting keeps them apart.
+  float lift = uShadow > 0.5 ? 0.001 : 0.003;
+  gl_Position = uViewProjection * vec4(world, lift, 1.0);
 
   vLocal = corner;
   vKind = aKind;
