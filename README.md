@@ -41,6 +41,7 @@ npm run build:only   # build without the type-check
 npm run preview      # serve dist/
 npm run check        # astro check + vue-tsc
 npm run check:site   # verify dist/ (links, redirects, legacy URLs)
+npm run test:river   # unit tests for the homepage river's world and fish logic
 npx wrangler deploy  # ship dist/ to Cloudflare Workers
 ```
 
@@ -57,7 +58,8 @@ src/content.config.ts  the `blog` collection schema
 src/layouts/           BaseLayout + PostLayout
 src/pages/             home, /<slug>/ posts, tags, categories, rss, search.json
 src/lib/               remark/rehype plugins, Shiki theme, text helpers
-static/                favicon, robots.txt, _redirects
+src/scripts/river/     the homepage river: raw WebGL2 scene, loaded only near the viewport
+static/                favicon, robots.txt, _redirects, river/ textures
 scripts/check-site.mjs post-build verification
 wrangler.jsonc         Cloudflare Workers deploy config (static assets only)
 ```
@@ -76,6 +78,11 @@ wrangler.jsonc         Cloudflare Workers deploy config (static assets only)
   cover fails the build rather than 404ing in someone's social card.
 - One such reference (`dsc_2390.jpg`) had been broken on the live site since
   before the migration; it now points at the post's actual lead image.
+
+## Credits
+
+The river's grass, pebble, moss and rock textures (`static/river/`) are CC0 from
+[Poly Haven](https://polyhaven.com); see `static/river/CREDITS.txt` for each asset.
 
 ## Deploy
 
