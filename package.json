@@ -13,7 +13,8 @@
     "check:astro": "astro check",
     "check:vue": "vue-tsc --noEmit",
     "check:site": "node scripts/check-site.mjs dist",
-    "test:river": "node --test src/scripts/river/world.test.ts src/scripts/river/camera.test.ts src/scripts/river/drift.test.ts src/scripts/river/fish.test.ts src/scripts/river/quality.test.ts"
+    "test:river": "node --test src/scripts/river/world.test.ts src/scripts/river/camera.test.ts src/scripts/river/drift.test.ts src/scripts/river/fish.test.ts src/scripts/river/quality.test.ts",
+    "test:viaduct": "node --test src/scripts/viaduct/track.test.ts src/scripts/viaduct/terrain.test.ts src/scripts/viaduct/train.test.ts src/scripts/viaduct/scenery.test.ts src/scripts/viaduct/camera.test.ts"
   },
   "engines": {
     "node": ">=20.3.0"
@@ -33,11 +34,13 @@
     "astro-expressive-code": "^0.44.2",
     "minisearch": "^7.2.0",
     "tailwindcss": "^4.1.14",
+    "three": "^0.186.1",
     "unist-util-visit": "^5.1.0",
     "vue": "^3.5.43"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@types/three": "^0.186.0",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.1.1",
     "wrangler": "^4.135.0"
