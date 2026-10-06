@@ -144,6 +144,18 @@ export function attachViewControls(canvas: HTMLCanvasElement, host: ViewHost): v
     }
   }
 
+  // `touch-action: pan-y` still lets a browser scroll the page with two fingers, which would
+  // cancel the pinch; a two-finger gesture on the canvas belongs to the camera.
+  canvas.addEventListener(
+    'touchmove',
+    (event) => {
+      if (event.touches.length > 1 && event.cancelable) {
+        event.preventDefault();
+      }
+    },
+    { passive: false },
+  );
+
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
 
