@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostList from '../components/PostList.astro';
 import TagIcon from '../components/TagIcon.astro';
+import RiverScene from '../components/RiverScene.astro';
 import { postHref } from '../lib/posts';
 import risanPhoto from '../assets/risan.webp';
 
@@ -146,6 +147,8 @@ const sortedTags = [...terms.entries()].sort((a, b) => b[1] - a[1] || a[0].local
         }
       </div>
     </section>
+
+    <RiverScene />
   </div>
 </BaseLayout>
 

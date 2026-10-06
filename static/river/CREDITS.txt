@@ -1,0 +1,7 @@
+Textures in this folder come from Poly Haven (https://polyhaven.com), licence CC0 (public domain).
+Each file is the 2k diffuse JPG of the asset, downscaled to 512x512 and re-encoded as WebP.
+
+grass.webp    forrest_ground_01      https://polyhaven.com/a/forrest_ground_01      Rob Tuytel     CC0
+pebbles.webp  ganges_river_pebbles   https://polyhaven.com/a/ganges_river_pebbles   Amal Kumar     CC0
+moss.webp     mossy_rock             https://polyhaven.com/a/mossy_rock             Rob Tuytel     CC0
+rock.webp     rock_08                https://polyhaven.com/a/rock_08                Rob Tuytel     CC0

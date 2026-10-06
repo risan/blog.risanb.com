@@ -1,0 +1,80 @@
+---
+// The textures in static/river/ are CC0, from Poly Haven (see static/river/CREDITS.txt).
+---
+
+<section class="section-block river" style="margin-top: 72px;" data-river>
+  <div class="sechead">
+    <h3>Sungai</h3>
+    <span class="river-hint">Sentuh &amp; geser airnya</span>
+  </div>
+  <div class="river-frame" data-river-frame>
+    <canvas
+      class="river-canvas"
+      data-river-canvas
+      role="img"
+      aria-label="Sungai kecil dengan ikan trout dan grayling yang berenang melawan arus"></canvas>
+  </div>
+</section>
+
+<script>
+  import { bootRiver } from '../scripts/river/boot';
+
+  const section = document.querySelector<HTMLElement>('[data-river]');
+  if (section) {
+    bootRiver(section);
+  }
+</script>
+
+<style>
+  .river-hint {
+    font-size: 0.8125rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .river:has(.is-fallback) .river-hint {
+    display: none;
+  }
+
+  .river-frame {
+    position: relative;
+    margin-top: 20px;
+    aspect-ratio: 21 / 10;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--sand-2);
+    box-shadow: 0 4px 16px rgba(42, 31, 23, 0.07);
+  }
+
+  .river-frame.is-fallback {
+    background: linear-gradient(135deg, var(--sand-2), #8fc9c4);
+  }
+
+  .river-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    /* Vertical swipes still scroll the page; taps and horizontal drags stir the water. */
+    touch-action: pan-y;
+    cursor: crosshair;
+  }
+
+  .river-frame.is-ready .river-canvas {
+    opacity: 1;
+  }
+
+  @media (max-width: 819px) {
+    .river-frame {
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  @media (max-width: 559px) {
+    .river-frame {
+      aspect-ratio: 4 / 5;
+    }
+  }
+</style>
