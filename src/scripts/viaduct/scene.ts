@@ -85,12 +85,12 @@ const FRAME_COUNTER_EVERY = 15;
 const GRASS_TEXTURE_URL = '/river/grass.webp';
 const ROCK_TILE_METRES = 8;
 // Distance haze, measured along the view from the camera, which stands 500 m back from the point
-// the view is centred on: nothing within 170 m behind that point is touched, so the loop keeps its
-// colour, and the far mountain sides fade into a pale blue-grey.
+// the view is centred on. At a low tilt the depth grows fast up the screen: the loop in the default
+// view lies at about 500 and keeps its colours, and the far mountain sides fade into a pale blue-grey.
 const CAMERA_DISTANCE = 500;
 const HAZE_COLOR = 0xb7c5cf;
-const HAZE_START = CAMERA_DISTANCE + 170;
-const HAZE_END = CAMERA_DISTANCE + 900;
+const HAZE_START = CAMERA_DISTANCE + 70;
+const HAZE_END = CAMERA_DISTANCE + 420;
 
 function terrainGeometry(grid: TerrainGrid): BufferGeometry {
   const geometry = new BufferGeometry();

@@ -96,7 +96,7 @@ export const MIN_TREE_DISTANCE_TO_BED = 6;
 export const MIN_TREE_DISTANCE_TO_VIADUCT = 12;
 export const LANE_HALF_WIDTH = 1.7;
 export const MAX_BUSHES = 60;
-const FAR_FOREST_SPACING = 7;
+const FAR_FOREST_SPACING = 8.2;
 
 // Early autumn in the valley: the broadleaves turning, gold and orange among the last greens,
 // some rust. Conifers stay green.
@@ -450,7 +450,7 @@ export function createScenery(ground: Ground, seed = 3): Scenery {
 
   // Every second house has a tree in its garden, on the side away from the street.
   for (const house of houses) {
-    if (house.church || villageRandom() > 0.55) {
+    if (house.church || villageRandom() > 0.4) {
       continue;
     }
 
@@ -548,9 +548,9 @@ function createFarForest(ground: Ground, random: () => number, streets: Street[]
         y: height,
         z,
         conifer,
-        radius: conifer ? 2.6 + random() * 1.0 : 3.8 + random() * 1.6,
+        radius: conifer ? 2.6 + random() * 1.0 : 3.2 + random() * 1.4,
         height: conifer ? 11 + random() * 6 : 8 + random() * 3,
-        color: conifer ? pickFrom(random, CONIFER_COLORS) : roll < 0.5 ? pickFrom(random, BROADLEAF_COLORS) : roll < 0.75 ? pickFrom(random, GOLD_COLORS) : roll < 0.9 ? pickFrom(random, ORANGE_COLORS) : pickFrom(random, RUST_COLORS),
+        color: conifer ? pickFrom(random, CONIFER_COLORS) : roll < 0.62 ? pickFrom(random, BROADLEAF_COLORS) : roll < 0.8 ? pickFrom(random, GOLD_COLORS) : roll < 0.93 ? pickFrom(random, ORANGE_COLORS) : pickFrom(random, RUST_COLORS),
       });
     }
   }

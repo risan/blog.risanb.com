@@ -124,7 +124,7 @@ export interface Vegetation {
 // The far forest is plain faceted shapes, a spruce of two cones and a broadleaf of one ball, in the
 // colour of each tree. They carry no wind and cast no shadow: the mountain sides are seen small.
 function buildFarForest(trees: Scenery['farTrees'], high: boolean): InstancedMesh[] {
-  const shown = high ? trees : trees.filter((_, index) => index % 2 === 0);
+  const shown = high ? trees : trees.filter((_, index) => index % 3 === 0);
   const material = new MeshStandardMaterial({ vertexColors: true, roughness: 1 });
   const dummy = new Object3D();
   const spruces = shown.filter((tree) => tree.conifer);
@@ -146,7 +146,7 @@ function buildFarForest(trees: Scenery['farTrees'], high: boolean): InstancedMes
     dummy.scale.set(tree.radius * 1.1, tree.radius * 1.8, tree.radius * 1.1);
     dummy.updateMatrix();
     ballMesh.setMatrixAt(index, dummy.matrix);
-    ballMesh.setColorAt(index, colorOf(tree.color, 1.25));
+    ballMesh.setColorAt(index, colorOf(tree.color, 1.05));
   });
 
   for (const mesh of [spruceMesh, ballMesh]) {

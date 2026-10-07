@@ -409,13 +409,13 @@ export const TERRAIN_UV_METRES = 5;
 // Fans of scree that spill down the mountain sides: where each starts (x east, north), how far it
 // runs and how wide it gets, and the direction it runs in (degrees clockwise from north).
 const SCREE_FANS = [
-  { x: -330, north: 318, length: 170, width: 70, heading: 160 },
-  { x: -215, north: 305, length: 150, width: 90, heading: 175 },
-  { x: -118, north: 330, length: 190, width: 110, heading: 185 },
-  { x: -40, north: 322, length: 150, width: 70, heading: 170 },
-  { x: 60, north: 330, length: 170, width: 100, heading: 190 },
-  { x: -440, north: 250, length: 120, width: 60, heading: 140 },
-  { x: -168, north: 232, length: 118, width: 64, heading: 176 },
+  { x: -330, north: 318, length: 170, width: 44, heading: 160 },
+  { x: -215, north: 305, length: 150, width: 56, heading: 175 },
+  { x: -118, north: 330, length: 190, width: 50, heading: 185 },
+  { x: -40, north: 322, length: 150, width: 40, heading: 170 },
+  { x: 60, north: 330, length: 170, width: 60, heading: 190 },
+  { x: -440, north: 250, length: 120, width: 40, heading: 140 },
+  { x: -168, north: 232, length: 118, width: 44, heading: 176 },
 ];
 
 function screeFans(x: number, north: number): number {
@@ -448,7 +448,7 @@ export function valleyFloorAt(x: number, z: number): number {
 // How far a point is into the ground that was not part of the old default view: beyond the old
 // bounds, or far enough west of the loop that the view never reaches it. Its look is the new one.
 function farness(x: number, z: number): number {
-  return Math.max(smoothstep(0, 45, distanceOutsideNear(x, z)), smoothstep(-110, -200, x));
+  return Math.max(smoothstep(0, 45, distanceOutsideNear(x, z)), smoothstep(-112, -180, x + (valueNoise(z * 0.03, 5) - 0.5) * 50));
 }
 
 // How much of a point on the far mountain sides is forest and how much is bare scree, from its

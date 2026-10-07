@@ -345,7 +345,7 @@ export function buildFarBroadleaf(): BuiltMesh {
       const flat = Math.cos(latitude);
       const normal: Vec3 = [Math.cos(angle) * flat, Math.sin(latitude), Math.sin(angle) * flat];
       const shade = 0.6 + 0.5 * (normal[1] * 0.5 + 0.5);
-      const bump = 0.86 + random() * 0.28;
+      const bump = 0.74 + random() * 0.5;
       row.push(builder.vertex([normal[0] * bump, 0.5 + normal[1] * 0.5 * bump, normal[2] * bump], normal, [0, 0], [shade, shade, shade]));
     }
 
