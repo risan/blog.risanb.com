@@ -41,6 +41,7 @@ import { CONSIST, createPoses, PHOTO_TIME, placeConsist, trainStateAt, type Vehi
 import { buildVegetation } from './vegetation.ts';
 import { windTime } from './wind.ts';
 import { buildTerrainGrid, createGround, type TerrainGrid } from './terrain.ts';
+import { CANOPY_TILE_METRES, createCanopyTexture } from './canopyTexture.ts';
 import { createGravelTexture, createMasonryTexture, createScreeTexture, createVoussoirTexture, loadDetailTexture } from './textures.ts';
 import { buildViaduct } from './viaductMesh.ts';
 import { buildVillage } from './villageMesh.ts';
@@ -98,6 +99,7 @@ function terrainGeometry(grid: TerrainGrid): BufferGeometry {
   geometry.setAttribute('uv', new BufferAttribute(grid.uvs, 2));
   geometry.setAttribute('color', new BufferAttribute(grid.colors, 3));
   geometry.setAttribute('rock', new BufferAttribute(grid.rock, 1));
+  geometry.setAttribute('forest', new BufferAttribute(grid.forest, 1));
   geometry.setIndex(new BufferAttribute(grid.indices, 1));
   geometry.computeVertexNormals();
 
@@ -124,6 +126,7 @@ export async function createViaductScene(canvas: HTMLCanvasElement): Promise<Via
   const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   const grassDetail = await loadDetailTexture(GRASS_TEXTURE_URL, 0.82, 1.9, anisotropy);
   const rockDetail = createScreeTexture(anisotropy);
+  const canopyDetail = createCanopyTexture(anisotropy);
   grassDetail.wrapS = RepeatWrapping;
   grassDetail.wrapT = RepeatWrapping;
   const masonryTexture = createMasonryTexture(anisotropy);
@@ -138,15 +141,17 @@ export async function createViaductScene(canvas: HTMLCanvasElement): Promise<Via
   terrainMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.rockMap = { value: rockDetail };
     shader.uniforms.rockTile = { value: 1 / ROCK_TILE_METRES };
+    shader.uniforms.canopyMap = { value: canopyDetail };
+    shader.uniforms.canopyTile = { value: 1 / CANOPY_TILE_METRES };
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float rock;\nvarying float vRock;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRock = rock;\nvWorldPosition = position;\nvWorldNormal = normal;');
+      .replace('#include <common>', '#include <common>\nattribute float rock;\nattribute float forest;\nvarying float vRock;\nvarying float vForest;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRock = rock;\nvForest = forest;\nvWorldPosition = position;\nvWorldNormal = normal;');
     // The scree is mapped from three sides by world position, so it does not stretch on steep
     // slopes: each side counts as much as the ground faces it.
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform sampler2D rockMap;\nuniform float rockTile;\nvarying float vRock;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;',
+        '#include <common>\nuniform sampler2D rockMap;\nuniform float rockTile;\nuniform sampler2D canopyMap;\nuniform float canopyTile;\nvarying float vRock;\nvarying float vForest;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;',
       )
       .replace(
         '#include <map_fragment>',
@@ -157,7 +162,8 @@ vec3 rockSample =
   texture2D(rockMap, vWorldPosition.zy * rockTile).rgb * triplanarWeight.x +
   texture2D(rockMap, vWorldPosition.xz * rockTile).rgb * triplanarWeight.y +
   texture2D(rockMap, vWorldPosition.xy * rockTile).rgb * triplanarWeight.z;
-diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
+vec3 canopySample = texture2D(canopyMap, vWorldPosition.xz * canopyTile).rgb;
+diffuseColor.rgb *= mix(mix(grassSample, rockSample, vRock), canopySample, vForest);`,
       );
   };
 

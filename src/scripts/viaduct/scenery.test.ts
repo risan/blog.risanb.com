@@ -64,13 +64,23 @@ test('the far forest stands on the mountain sides, clear of the line, the street
   for (const tree of scenery.farTrees) {
     assert.ok(ground.distanceToBed(tree.x, tree.z) >= 9, 'far tree on the line');
     assert.ok(Math.abs(tree.y - ground.heightAt(tree.x, tree.z)) < 1e-9);
-    assert.ok(tree.x < -110 || tree.z < -205 || tree.z > 150 || tree.x > 200, 'far tree in the old default view');
+    assert.ok(tree.x < -85 || tree.z < -205 || tree.z > 150 || tree.x > 200, 'far tree in the old default view');
   }
 });
 
-test('the orchard is rows of small trees on the slope between the main road and the loop', () => {
-  assert.ok(scenery.orchard.length >= 40 && scenery.orchard.length <= 120);
-  for (const tree of scenery.orchard) {
-    assert.ok(tree.x < -85 && tree.x > -125);
+test('the orchard is rows of small trees on the slope between the main road and the loop, and the gardens have their own', () => {
+  const rows = scenery.orchard.filter((tree) => tree.x < -85 && tree.x > -125 && -tree.z < -50 && -tree.z > -100);
+  assert.ok(rows.length >= 40 && rows.length <= 120, `${rows.length} orchard trees`);
+  assert.ok(scenery.orchard.length > rows.length + 8, 'gardens have fruit trees');
+  assert.ok(scenery.hedges.length >= 40);
+});
+
+test('low dry-stone walls line the village roads, clear of the roads themselves', () => {
+  const village = scenery.walls.filter((wall) => wall.height > 0.9 && wall.height < 1 && wall.thickness === 0.5);
+  assert.ok(village.length >= 15, `${village.length} roadside walls`);
+  for (const wall of village) {
+    for (const [x, z] of wall.points) {
+      assert.ok(scenery.houses.every((house) => Math.hypot(house.x - x, house.z - z) > 3), 'wall inside a house');
+    }
   }
 });

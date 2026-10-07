@@ -19,6 +19,8 @@ export interface House {
   flatRoof: boolean;
   // A steep lower pitch under a flat top, as on the big villa beside the loop.
   mansard: boolean;
+  // Sloping on all four sides instead of gabled.
+  hipped: boolean;
   // Stone houses show the bare masonry; the rest are plastered.
   stone: boolean;
   church: boolean;
@@ -50,7 +52,7 @@ const HOUSE_CLEARANCE_TO_VIADUCT = 24;
 const MAX_SLOPE = 0.22;
 const STREET_MARGIN = 2;
 
-const PLASTER = [0xf2eee4, 0xefe9da, 0xe9dfc4, 0xe7d9b4, 0xdcc590, 0xe4ccb2, 0xf0e4d0, 0xd9d3c4].map(hexToLinear);
+const PLASTER = [0xf2eee4, 0xf4f1ea, 0xefe9da, 0xe9dfc4, 0xe7d9b4, 0xdcc590, 0xd8b878, 0xf0e4d0, 0xe8c9bd, 0xe2b8a6, 0xd9d3c4, 0xeadcc0].map(hexToLinear);
 const STONE = hexToLinear(0xd2cabb);
 const SLATE = [0xa4a6aa, 0x969a9e, 0xb2b3b5, 0x8c9195].map(hexToLinear);
 
@@ -94,6 +96,27 @@ export function distanceToPolyline(points: [number, number][], x: number, z: num
   }
 
   return nearest;
+}
+
+// The point of a polyline nearest to (x, z), the unit direction there, and how far away it is.
+export function nearestOnPolyline(points: [number, number][], x: number, z: number): { x: number; z: number; tx: number; tz: number; distance: number } {
+  let best = { x: points[0][0], z: points[0][1], tx: 1, tz: 0, distance: Infinity };
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const [ax, az] = points[index];
+    const [bx, bz] = points[index + 1];
+    const abx = bx - ax;
+    const abz = bz - az;
+    const length = Math.hypot(abx, abz);
+    const t = Math.min(Math.max(((x - ax) * abx + (z - az) * abz) / (length * length), 0), 1);
+    const nearX = ax + abx * t;
+    const nearZ = az + abz * t;
+    const distance = Math.hypot(x - nearX, z - nearZ);
+    if (distance < best.distance) {
+      best = { x: nearX, z: nearZ, tx: abx / length, tz: abz / length, distance };
+    }
+  }
+
+  return best;
 }
 
 type Corner = [number, number];
@@ -193,8 +216,8 @@ export function placeHouses(ground: Ground, plan: VillagePlan, limit: number): H
     const { frontage, side } = walker;
     const street = plan.streets[frontage.street];
     const floors = pick([2, 2, 3, 3, 3, 4]);
-    const width = 8.5 + random() * 6;
-    const depth = 7.5 + random() * 3.5;
+    const width = 7 + random() * 8 + (random() < 0.2 ? 4 : 0);
+    const depth = 6.5 + random() * 4.5;
     const centre = alongPolyline(street.points, walker.distance + width / 2);
     // The normal to the right of the way the street runs is the `side` = 1 edge.
     const offset = street.width / 2 + frontage.setback + depth / 2;
@@ -210,12 +233,13 @@ export function placeHouses(ground: Ground, plan: VillagePlan, limit: number): H
       roof: pick(SLATE),
       flatRoof: random() < 0.07,
       mansard: false,
+      hipped: random() < 0.35 && width > depth + 3,
       stone: false,
       church: false,
     };
     house.stone = house.wall === STONE;
     const terraced = random() > frontage.looseness;
-    const gap = terraced ? 0.8 + random() * 1.8 : 5 + random() * 12 * frontage.looseness;
+    const gap = terraced ? 0.3 + random() * 1.2 : 4 + random() * 10 * frontage.looseness;
     if (!acceptable(house, frontage.street, frontage.setback)) {
       walker.distance += 5;
 

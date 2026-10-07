@@ -307,13 +307,12 @@ export function buildConiferCrown(whorls: number, branchesLow: number, branchesH
   return builder.build();
 }
 
-// The trees of the far forest, drawn only small: a spruce of three stacked cones and a broadleaf of
-// one squashed ball, both one metre wide and high, darker underneath. They carry a vertex colour
-// for shading, and the instance colour tints them.
+// The trees of the far forest, drawn only small: a spruce of two stacked cones, one metre wide and
+// high, darker underneath. It carries a vertex colour for shading, and the instance colour tints it.
 export function buildFarSpruce(): BuiltMesh {
   const builder = new MeshBuilder();
   const sides = 5;
-  const tiers: [number, number, number][] = [[0.1, 0.5, 1], [0.34, 0.74, 0.74], [0.58, 1, 0.46]];
+  const tiers: [number, number, number][] = [[0.08, 0.6, 1], [0.4, 1, 0.64]];
   for (const [bottom, top, radius] of tiers) {
     const rim: number[] = [];
     for (let side = 0; side < sides; side += 1) {
@@ -325,38 +324,6 @@ export function buildFarSpruce(): BuiltMesh {
     const apex = builder.vertex([0, top, 0], [0, 1, 0], [0, 0], [1, 1, 1]);
     for (let side = 0; side < sides; side += 1) {
       builder.triangle(rim[(side + 1) % sides], rim[side], apex);
-    }
-  }
-
-  return builder.build();
-}
-
-export function buildFarBroadleaf(): BuiltMesh {
-  const builder = new MeshBuilder();
-  const random = mulberry32(14);
-  const rings = 3;
-  const sides = 6;
-  const rows: number[][] = [];
-  for (let ring = 0; ring <= rings; ring += 1) {
-    const latitude = -Math.PI / 2 + (ring / rings) * Math.PI;
-    const row: number[] = [];
-    for (let side = 0; side < sides; side += 1) {
-      const angle = (side / sides) * Math.PI * 2 + (ring % 2) * 0.4;
-      const flat = Math.cos(latitude);
-      const normal: Vec3 = [Math.cos(angle) * flat, Math.sin(latitude), Math.sin(angle) * flat];
-      const shade = 0.6 + 0.5 * (normal[1] * 0.5 + 0.5);
-      const bump = 0.74 + random() * 0.5;
-      row.push(builder.vertex([normal[0] * bump, 0.5 + normal[1] * 0.5 * bump, normal[2] * bump], normal, [0, 0], [shade, shade, shade]));
-    }
-
-    rows.push(row);
-  }
-
-  for (let ring = 0; ring < rings; ring += 1) {
-    for (let side = 0; side < sides; side += 1) {
-      const next = (side + 1) % sides;
-      builder.triangle(rows[ring][next], rows[ring][side], rows[ring + 1][side]);
-      builder.triangle(rows[ring + 1][next], rows[ring][next], rows[ring + 1][side]);
     }
   }
 

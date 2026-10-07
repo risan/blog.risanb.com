@@ -34,6 +34,8 @@ const TOWER_FLOORS = 7;
 const TOWER_FLOOR_HEIGHT = 3.4;
 const TOWER_ROOF = 9;
 const WHITE: Rgb = [1, 1, 1];
+// The boards under the eaves: the slate texture is dark, so the colour is bright.
+const UNDERSIDE: Rgb = [1.4, 0.95, 0.62];
 
 type Uv = [[number, number], [number, number], [number, number], [number, number]];
 
@@ -144,6 +146,12 @@ function buildRoof(roofs: MeshBuilder, walls: MeshBuilder, frame: Frame, house: 
     return;
   }
 
+  if (house.hipped) {
+    buildHipped(roofs, frame, house, eaves, random);
+
+    return;
+  }
+
   const overhangAcross = 0.9;
   const overhangAlong = 0.6;
   const rise = hd * 0.8;
@@ -174,6 +182,10 @@ function buildRoof(roofs: MeshBuilder, walls: MeshBuilder, frame: Frame, house: 
     );
   }
 
+  for (const side of [1, -1] as const) {
+    eaveUnderside(roofs, frame, hw + overhangAlong, hd, overhangAcross, eaves, eaveY, side);
+  }
+
   const bare = bayUv(house.stone ? 1 : 0, BAY_BARE_ROW);
   const centreUv: [number, number] = [(bare.u0 + bare.u1) / 2, (bare.v0 + bare.v1) / 2];
   for (const end of [-1, 1]) {
@@ -188,6 +200,79 @@ function buildRoof(roofs: MeshBuilder, walls: MeshBuilder, frame: Frame, house: 
   if (random() < 0.7) {
     const along = (random() - 0.5) * house.width * 0.5;
     const base = pointAt(frame, along, ridge - rise * 0.5, 0);
+    roofs.box([base[0], base[1], base[2]], [0.8, rise * 0.5 + 1.4, 0.8], Math.atan2(frame.sin, frame.cos), mixColor(house.roof, [0.2, 0.18, 0.16], 0.4), { uv: [0.5, 0.5] });
+  }
+}
+
+// The dark brown boards under a wide eave, seen from the street at a low angle.
+function eaveUnderside(roofs: MeshBuilder, frame: Frame, halfLength: number, wallAcross: number, overhang: number, eaves: number, eaveY: number, side: 1 | -1) {
+  roofs.polygon(
+    [
+      pointAt(frame, -halfLength, eaves, side * wallAcross),
+      pointAt(frame, halfLength, eaves, side * wallAcross),
+      pointAt(frame, halfLength, eaveY, side * (wallAcross + overhang)),
+      pointAt(frame, -halfLength, eaveY, side * (wallAcross + overhang)),
+    ],
+    UNDERSIDE,
+    [0, -1, 0],
+    () => [0.5, 0.5],
+  );
+}
+
+// A roof that slopes on all four sides, the ridge shorter than the house is long.
+function buildHipped(roofs: MeshBuilder, frame: Frame, house: House, eaves: number, random: () => number) {
+  const hw = house.width / 2;
+  const hd = house.depth / 2;
+  const overhang = 0.9;
+  const rise = hd * 0.75;
+  const ridge = eaves + rise;
+  const half = Math.max(hw - hd, 0.8);
+  const slopeLength = Math.hypot(rise, hd);
+  const eaveY = eaves - overhang * (rise / hd);
+  const reach = hd + overhang;
+  const reachAlong = hw + overhang;
+  const outward = (along: number, across: number): Vec3 => {
+    const flat = direction(frame, along, across);
+
+    return [(flat[0] * rise) / slopeLength, hd / slopeLength, (flat[2] * rise) / slopeLength];
+  };
+  for (const side of [1, -1] as const) {
+    roofs.polygon(
+      [
+        pointAt(frame, -reachAlong, eaveY, side * reach),
+        pointAt(frame, reachAlong, eaveY, side * reach),
+        pointAt(frame, half, ridge, 0),
+        pointAt(frame, -half, ridge, 0),
+      ],
+      side === 1 ? house.roof : mixColor(house.roof, [0, 0, 0], 0.16),
+      outward(0, side),
+      (point) => {
+        const along = (point[0] - frame.x) * frame.cos - (point[2] - frame.z) * frame.sin;
+
+        return [along / SLATE_METRES, ((ridge - point[1]) * (slopeLength / rise)) / SLATE_METRES];
+      },
+    );
+  }
+
+  for (const end of [1, -1] as const) {
+    roofs.polygon(
+      [pointAt(frame, end * reachAlong, eaveY, -reach), pointAt(frame, end * reachAlong, eaveY, reach), pointAt(frame, end * half, ridge, 0)],
+      mixColor(house.roof, [0, 0, 0], 0.08),
+      outward(end, 0),
+      (point) => {
+        const across = (point[0] - frame.x) * frame.sin + (point[2] - frame.z) * frame.cos;
+
+        return [across / SLATE_METRES, ((ridge - point[1]) * (slopeLength / rise)) / SLATE_METRES];
+      },
+    );
+  }
+
+  for (const side of [1, -1] as const) {
+    eaveUnderside(roofs, frame, reachAlong, hd, overhang, eaves, eaveY, side);
+  }
+
+  if (random() < 0.7) {
+    const base = pointAt(frame, (random() - 0.5) * half, ridge - rise * 0.5, 0);
     roofs.box([base[0], base[1], base[2]], [0.8, rise * 0.5 + 1.4, 0.8], Math.atan2(frame.sin, frame.cos), mixColor(house.roof, [0.2, 0.18, 0.16], 0.4), { uv: [0.5, 0.5] });
   }
 }

@@ -8,6 +8,7 @@ import { offsetFromTrack, track } from './track.ts';
 import {
   distanceToPolyline,
   FLOOR_HEIGHT,
+  nearestOnPolyline,
   placeHouses,
   type Frontage,
   type House,
@@ -61,12 +62,11 @@ export interface Post {
   color: Rgb;
 }
 
-// A tree of the far forest: a plain cone or ball, seen only from a distance.
+// A tree of the far forest: a plain cone, seen only from a distance.
 export interface FarTree {
   x: number;
   y: number;
   z: number;
-  conifer: boolean;
   radius: number;
   height: number;
   color: Rgb;
@@ -83,8 +83,11 @@ export interface Scenery {
   lane: [number, number][];
   // The village roads, smoothed, with their widths.
   streets: Street[];
-  // Small fruit trees in rows: their crowns are bushes, the trunks are drawn with the props.
+  // Small fruit trees, in the orchard's rows and in the gardens: their crowns are bushes, the
+  // trunks are drawn with the props.
   orchard: Bush[];
+  // Low hedges along the gardens.
+  hedges: Bush[];
   farTrees: FarTree[];
 }
 
@@ -96,7 +99,7 @@ export const MIN_TREE_DISTANCE_TO_BED = 6;
 export const MIN_TREE_DISTANCE_TO_VIADUCT = 12;
 export const LANE_HALF_WIDTH = 1.7;
 export const MAX_BUSHES = 60;
-const FAR_FOREST_SPACING = 8.2;
+const FAR_FOREST_SPACING = 7.2;
 
 // Early autumn in the valley: the broadleaves turning, gold and orange among the last greens,
 // some rust. Conifers stay green.
@@ -106,6 +109,8 @@ const ORANGE_COLORS = [0xb8682a, 0xc0782e, 0xa65a24].map(hexToLinear);
 const RUST_COLORS = [0x9a4426, 0x8a3a22].map(hexToLinear);
 const CONIFER_COLORS = [0x2f4f26, 0x38592b, 0x435f2a].map(hexToLinear);
 const BUSH_COLORS = [0x4a5a26, 0x5a6228, 0x6e5a28, 0x3f5426].map(hexToLinear);
+const LARCH_COLORS = [0x9c7a2a, 0x9a5826, 0xb08c34].map(hexToLinear);
+const HEDGE_COLORS = [0x3f5426, 0x4a5a26, 0x365022].map(hexToLinear);
 const ORCHARD_COLORS = [0x6a7a30, 0x76843a, 0x86882f, 0xa89030, 0x8a8a36].map(hexToLinear);
 const ROCK_COLORS = [0xd2cabb, 0xbfb6a6, 0xe0d9cb, 0xa59c8d].map(hexToLinear);
 
@@ -207,8 +212,8 @@ function createVillage(ground: Ground, streets: Street[], random: () => number):
   const slate = hexToLinear(0xa09e9a);
   const [churchX, churchZ] = planToWorld(CHURCH_AT);
   const fixed: House[] = [
-    { x: -72, z: 110, width: 12, depth: 8.5, height: 6.2, floors: 2, yaw: 0.08, wall: stone, roof: slate, flatRoof: false, mansard: false, stone: true, church: false },
-    { x: -56, z: 90, width: 8, depth: 6, height: 4.4, floors: 1, yaw: 0.3, wall: hexToLinear(0xd9d0be), roof: slate, flatRoof: false, mansard: false, stone: false, church: false },
+    { x: -72, z: 110, width: 12, depth: 8.5, height: 6.2, floors: 2, yaw: 0.08, wall: stone, roof: slate, flatRoof: false, mansard: false, hipped: false, stone: true, church: false },
+    { x: -56, z: 90, width: 8, depth: 6, height: 4.4, floors: 1, yaw: 0.3, wall: hexToLinear(0xd9d0be), roof: slate, flatRoof: false, mansard: false, hipped: true, stone: false, church: false },
     // The big white villa with the green-grey mansard roof, on its terrace just west of the loop.
     {
       x: -101,
@@ -222,6 +227,7 @@ function createVillage(ground: Ground, streets: Street[], random: () => number):
       roof: hexToLinear(0x93a090),
       flatRoof: false,
       mansard: true,
+      hipped: false,
       stone: false,
       church: false,
     },
@@ -237,15 +243,16 @@ function createVillage(ground: Ground, streets: Street[], random: () => number):
       roof: hexToLinear(0x8a8d92),
       flatRoof: false,
       mansard: false,
+      hipped: false,
       stone: false,
       church: true,
     },
   ];
   const frontages: Frontage[] = [
-    { street: 0, setback: 2.5, from: 0.04, to: 0.98, perSide: 7, looseness: 0.2, sides: [1, -1] },
-    { street: 1, setback: 3, from: 0.06, to: 0.96, perSide: 2, looseness: 0.5, sides: [1, -1] },
-    { street: 2, setback: 3, from: 0.04, to: 0.96, perSide: 2, looseness: 0.45, sides: [1, -1] },
-    { street: 3, setback: 3, from: 0.04, to: 0.96, perSide: 2, looseness: 0.5, sides: [1, -1] },
+    { street: 0, setback: 1.8, from: 0.04, to: 0.98, perSide: 8, looseness: 0.08, sides: [1, -1] },
+    { street: 1, setback: 2.4, from: 0.06, to: 0.96, perSide: 2, looseness: 0.3, sides: [1, -1] },
+    { street: 2, setback: 2.4, from: 0.04, to: 0.96, perSide: 2, looseness: 0.25, sides: [1, -1] },
+    { street: 3, setback: 2.4, from: 0.04, to: 0.96, perSide: 2, looseness: 0.3, sides: [1, -1] },
     { street: 4, setback: 3, from: 0.05, to: 0.5, perSide: 1, looseness: 0.8, sides: [1, -1] },
     { street: 5, setback: 4, from: 0.4, to: 0.96, perSide: 2, looseness: 0.9, sides: [1, -1] },
     { street: 6, setback: 4.5, from: 0.03, to: 0.46, perSide: 3, looseness: 0.35, sides: [1, -1] },
@@ -372,6 +379,7 @@ export function createScenery(ground: Ground, seed = 3): Scenery {
   }
 
   walls.push({ points: upperWall, height: 1.9, thickness: 0.7 });
+  walls.push(...roadsideWalls(ground, houses, [...streets, { points: lane, width: LANE_SURFACE_WIDTH }]));
 
   const bushes: Bush[] = [];
   const addBush = (x: number, z: number) => {
@@ -480,6 +488,10 @@ export function createScenery(ground: Ground, seed = 3): Scenery {
     }
   }
 
+  const orchard = createOrchard(ground, villageRandom);
+  const hedges: Bush[] = [];
+  addGardens(ground, houses, villageRandom, orchard, hedges, (x, z) => clearOfLine(x, z, 2.5, 8));
+
   return {
     trees,
     bushes,
@@ -490,9 +502,86 @@ export function createScenery(ground: Ground, seed = 3): Scenery {
     standingStones,
     lane,
     streets,
-    orchard: createOrchard(ground, villageRandom),
+    orchard,
+    hedges,
     farTrees: createFarForest(ground, villageRandom, [...streets, { points: lane, width: LANE_SURFACE_WIDTH }], houses),
   };
+}
+
+// Low dry-stone walls along the road in front of the houses, as in the village photographs. A wall
+// stops short of junctions and of other houses.
+function roadsideWalls(ground: Ground, houses: House[], streets: Street[]): Wall[] {
+  const walls: Wall[] = [];
+  for (const house of houses) {
+    if (house.church) {
+      continue;
+    }
+
+    let nearest: { x: number; z: number; tx: number; tz: number; distance: number; width: number } | undefined;
+    for (const street of streets) {
+      const near = nearestOnPolyline(street.points, house.x, house.z);
+      if (!nearest || near.distance < nearest.distance) {
+        nearest = { ...near, width: street.width };
+      }
+    }
+
+    if (!nearest || nearest.distance > house.depth / 2 + 14) {
+      continue;
+    }
+
+    // Which side of the street the house is on, as the sign of the cross product with the direction.
+    const side = (house.x - nearest.x) * -nearest.tz + (house.z - nearest.z) * nearest.tx > 0 ? 1 : -1;
+    const offset = nearest.width / 2 + 0.9;
+    const points: [number, number][] = [];
+    for (let along = -house.width / 2 - 1; along <= house.width / 2 + 1; along += 2.5) {
+      const x = nearest.x + nearest.tx * along + -nearest.tz * side * offset;
+      const z = nearest.z + nearest.tz * along + nearest.tx * side * offset;
+      const crowded = streets.some((street) => distanceToPolyline(street.points, x, z) < street.width / 2 + 0.4);
+      const inside = houses.some((other) => insideHouse(other, x, z, 0.6));
+      if (!crowded && !inside && ground.distanceToBed(x, z) > 8) {
+        points.push([x, z]);
+      } else if (points.length >= 2) {
+        break;
+      } else {
+        points.length = 0;
+      }
+    }
+
+    if (points.length >= 2) {
+      walls.push({ points, height: 0.95, thickness: 0.5 });
+    }
+  }
+
+  return walls;
+}
+
+// Each house has a few small fruit trees and a low hedge on the sides away from the street.
+function addGardens(ground: Ground, houses: House[], random: () => number, orchard: Bush[], hedges: Bush[], free: (x: number, z: number) => boolean) {
+  const frame = (house: House, along: number, across: number): [number, number] => [
+    house.x + along * Math.cos(house.yaw) + across * Math.sin(house.yaw),
+    house.z - along * Math.sin(house.yaw) + across * Math.cos(house.yaw),
+  ];
+  for (const house of houses) {
+    if (house.church) {
+      continue;
+    }
+
+    const trees = random() < 0.6 ? 1 : 0;
+    for (let tree = 0; tree < trees; tree += 1) {
+      const [x, z] = frame(house, (random() - 0.5) * house.width * 1.2, (random() < 0.5 ? 1 : -1) * (house.depth / 2 + 2.5 + random() * 3));
+      if (free(x, z) && !houses.some((other) => insideHouse(other, x, z, 1.2))) {
+        orchard.push({ x, y: ground.heightAt(x, z) + 1, z, size: 0.9 + random() * 0.4, color: pickFrom(random, ORCHARD_COLORS) });
+      }
+    }
+
+    const side = random() < 0.5 ? 1 : -1;
+    for (let along = -house.width / 2; along <= house.width / 2; along += 3.4) {
+      const [x, z] = frame(house, along, side * (house.depth / 2 + 1.6));
+      if (free(x, z) && !houses.some((other) => insideHouse(other, x, z, 0.8))) {
+        hedges.push({ x, y: ground.heightAt(x, z), z, size: 1 + random() * 0.3, color: pickFrom(random, HEDGE_COLORS) });
+      }
+    }
+  }
 }
 
 // Rows of small fruit trees on the slope between the main road and the loop, laid slightly askew.
@@ -516,8 +605,8 @@ function createOrchard(ground: Ground, random: () => number): Bush[] {
   return trees;
 }
 
-// The forested mountain sides beyond the ground the scene had before: trees as plain cones and
-// balls, spaced about nine metres apart with clearings between.
+// The forested mountain sides beyond the ground the scene had before: spruces and larches as plain
+// cones, about six metres apart with clearings between, over the painted canopy of the terrain.
 function createFarForest(ground: Ground, random: () => number, streets: Street[], houses: House[]): FarTree[] {
   const trees: FarTree[] = [];
   const { minX, maxX, minZ, maxZ } = TERRAIN_BOUNDS;
@@ -533,7 +622,7 @@ function createFarForest(ground: Ground, random: () => number, streets: Street[]
 
       const height = ground.heightAt(x, z);
       const cover = mountainCover(x, z, height, ground.slopeAt(x, z), ground.uphillAt(x, z));
-      if (cover.forest < 0.15 || cover.stony > 0.3 || random() > Math.min(1, cover.forest * 1.8) * (1 - cover.stony)) {
+      if (cover.forest < 0.15 || cover.stony > 0.3 || random() > Math.min(1, cover.forest * 2) * (1 - cover.stony)) {
         continue;
       }
 
@@ -541,16 +630,14 @@ function createFarForest(ground: Ground, random: () => number, streets: Street[]
         continue;
       }
 
-      const conifer = random() < 0.72;
-      const roll = random();
       trees.push({
         x,
         y: height,
         z,
-        conifer,
-        radius: conifer ? 2.6 + random() * 1.0 : 3.2 + random() * 1.4,
-        height: conifer ? 11 + random() * 6 : 8 + random() * 3,
-        color: conifer ? pickFrom(random, CONIFER_COLORS) : roll < 0.62 ? pickFrom(random, BROADLEAF_COLORS) : roll < 0.8 ? pickFrom(random, GOLD_COLORS) : roll < 0.93 ? pickFrom(random, ORANGE_COLORS) : pickFrom(random, RUST_COLORS),
+        radius: 2.9 + random() * 1.3,
+        height: 12 + random() * 6,
+        // Spruces are dark green; the larches among them have turned gold and orange.
+        color: random() < 0.1 ? pickFrom(random, LARCH_COLORS) : pickFrom(random, CONIFER_COLORS),
       });
     }
   }

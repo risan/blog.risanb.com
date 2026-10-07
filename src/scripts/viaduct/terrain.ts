@@ -81,6 +81,8 @@ export interface TerrainGrid {
   colors: Float32Array;
   // 0 for grass, 1 for scree: the shader mixes the two textures with it.
   rock: Float32Array;
+  // 0 for open ground, 1 under the forest: the shader paints a canopy there.
+  forest: Float32Array;
   indices: Uint32Array;
 }
 
@@ -399,9 +401,11 @@ const SCREE: Rgb = hexToLinear(0xe0d8c8);
 const SCREE_DARK: Rgb = hexToLinear(0xb0a692);
 const GRAVEL: Rgb = hexToLinear(0x9a9284);
 const SOIL: Rgb = hexToLinear(0x6f6a4a);
-const FOREST_DARK: Rgb = hexToLinear(0x2a4524);
-const FOREST_LIGHT: Rgb = hexToLinear(0x425f2c);
-const FOREST_TURNING: Rgb = hexToLinear(0x8a7a30);
+const FOREST_DARK: Rgb = hexToLinear(0x336a2a);
+const FOREST_LIGHT: Rgb = hexToLinear(0x52803a);
+const FOREST_GOLD: Rgb = hexToLinear(0xa08a2c);
+const FOREST_ORANGE: Rgb = hexToLinear(0xa5582a);
+const FOREST_RUST: Rgb = hexToLinear(0x8a3a22);
 
 // Mesh texture coordinates are metres divided by this, so one grass texture tile covers 5 m of ground.
 export const TERRAIN_UV_METRES = 5;
@@ -448,7 +452,7 @@ export function valleyFloorAt(x: number, z: number): number {
 // How far a point is into the ground that was not part of the old default view: beyond the old
 // bounds, or far enough west of the loop that the view never reaches it. Its look is the new one.
 function farness(x: number, z: number): number {
-  return Math.max(smoothstep(0, 45, distanceOutsideNear(x, z)), smoothstep(-112, -180, x + (valueNoise(z * 0.03, 5) - 0.5) * 50));
+  return Math.max(smoothstep(0, 45, distanceOutsideNear(x, z)), smoothstep(-92, -122, x + (valueNoise(z * 0.03, 5) - 0.5) * 14));
 }
 
 // How much of a point on the far mountain sides is forest and how much is bare scree, from its
@@ -456,11 +460,11 @@ function farness(x: number, z: number): number {
 export function mountainCover(x: number, z: number, height: number, slope: number, uphill: number): { forest: number; stony: number } {
   const beyond = farness(x, z);
   const above = height - valleyFloorAt(x, z);
-  const ribs = smoothstep(0.7, 0.86, valueNoise(x * 0.045 + 3, z * 0.03 + 9)) * smoothstep(55, 130, above);
-  const stony = Math.max(screeFans(x, -z) * 0.95, ribs * 0.8, smoothstep(1.3, 2.3, slope) * 0.7);
+  const ribs = smoothstep(0.8, 0.92, valueNoise(x * 0.045 + 3, z * 0.03 + 9)) * smoothstep(55, 130, above);
+  const stony = Math.max(screeFans(x, -z) * 0.95, ribs * 0.7, smoothstep(2, 3, slope) * 0.6);
 
   // The wood starts at the foot of the slope, where the line runs along it.
-  const forest = Math.max(smoothstep(4, 26, uphill), smoothstep(14, 50, above));
+  const forest = Math.max(smoothstep(2, 14, uphill), smoothstep(8, 32, above));
 
   return { forest: forest * beyond, stony };
 }
@@ -503,6 +507,7 @@ export function buildTerrainGrid(ground: Ground, spacing: number): TerrainGrid {
   const uvs = new Float32Array(columns * rows * 2);
   const colors = new Float32Array(columns * rows * 3);
   const rock = new Float32Array(columns * rows);
+  const forest = new Float32Array(columns * rows);
 
   for (let row = 0; row < rows; row += 1) {
     for (let column = 0; column < columns; column += 1) {
@@ -534,9 +539,14 @@ export function buildTerrainGrid(ground: Ground, spacing: number): TerrainGrid {
       const stonyNear = Math.min(1, smoothstep(0.75, 1.3, slope) * 0.8 + hillside * (0.4 + 0.6 * fine));
       const stony = stonyNear + (cover.stony - stonyNear) * beyond;
       color = mixColor(color, HILL_GRASS, Math.min(1, hillside * 0.8));
+      // The canopy seen from afar: dark spruce green with patches of turning larch, maple and rust.
       let wood = mixColor(FOREST_DARK, FOREST_LIGHT, valueNoise(x * 0.08, z * 0.08) * 0.7 + fine * 0.3);
-      wood = mixColor(wood, FOREST_TURNING, smoothstep(0.58, 0.8, valueNoise(x * 0.035 + 50, z * 0.035)) * 0.5);
+      const patch = valueNoise(x * 0.045 + 50, z * 0.045);
+      wood = mixColor(wood, FOREST_GOLD, smoothstep(0.62, 0.84, patch) * 0.35);
+      wood = mixColor(wood, FOREST_ORANGE, smoothstep(0.68, 0.88, valueNoise(x * 0.06 + 80, z * 0.06 - 20)) * 0.45);
+      wood = mixColor(wood, FOREST_RUST, smoothstep(0.74, 0.9, valueNoise(x * 0.05 - 40, z * 0.05 + 60)) * 0.5);
       color = mixColor(color, wood, cover.forest * (1 - stony));
+      forest[index] = cover.forest * (1 - stony);
       color = mixColor(color, mixColor(SCREE_DARK, SCREE, fine), stony * 0.9);
       color = mixColor(color, SOIL, 0.25 * smoothstep(0.4, 0.6, valueNoise(x * 0.09 + 5, z * 0.09 - 8)) * (1 - stony));
 
@@ -570,5 +580,5 @@ export function buildTerrainGrid(ground: Ground, spacing: number): TerrainGrid {
     }
   }
 
-  return { columns, rows, positions, uvs, colors, rock, indices };
+  return { columns, rows, positions, uvs, colors, rock, forest, indices };
 }

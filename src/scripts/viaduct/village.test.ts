@@ -24,6 +24,8 @@ test('houses are two to four storeys, mostly plastered, a few of stone, a few wi
   assert.ok(village.filter((house) => house.stone).length >= 1);
   assert.ok(village.filter((house) => !house.stone).length > village.length / 2);
   assert.ok(village.filter((house) => house.mansard).length === 1, 'one villa with a mansard roof');
+  assert.ok(village.filter((house) => house.hipped).length >= 4, 'some hipped roofs');
+  assert.ok(new Set(village.map((house) => house.wall.join())).size >= 6, 'plaster tones vary');
 });
 
 test('no house stands within 15 m of the line, in the viaduct clearance, on a street or on another house', () => {
