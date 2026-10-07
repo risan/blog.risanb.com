@@ -40,7 +40,8 @@ import { CONSIST, createPoses, PHOTO_TIME, placeConsist, trainStateAt, type Vehi
 import { buildVegetation } from './vegetation.ts';
 import { windTime } from './wind.ts';
 import { buildTerrainGrid, createGround, type TerrainGrid } from './terrain.ts';
-import { createGravelTexture, createMasonryTexture, createScreeTexture, createVoussoirTexture, loadDetailTexture } from './textures.ts';
+import { createStoneTextures, createTrimTextures } from './stonework.ts';
+import { createGravelTexture, createMasonryTexture, createScreeTexture, loadDetailTexture } from './textures.ts';
 import { buildViaduct } from './viaductMesh.ts';
 
 export interface ViaductScene {
@@ -117,7 +118,8 @@ export async function createViaductScene(canvas: HTMLCanvasElement): Promise<Via
   grassDetail.wrapS = RepeatWrapping;
   grassDetail.wrapT = RepeatWrapping;
   const masonryTexture = createMasonryTexture(anisotropy);
-  const voussoirTexture = createVoussoirTexture(anisotropy);
+  const stoneTextures = createStoneTextures(tierName === 'high' ? 1024 : 512, anisotropy);
+  const trimTextures = createTrimTextures(anisotropy);
   const gravelTexture = createGravelTexture(anisotropy);
 
   const scene = new Scene();
@@ -155,7 +157,8 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   scene.add(terrain);
 
   const masonryMaterial = new MeshStandardMaterial({ map: masonryTexture, vertexColors: true, roughness: 0.93, metalness: 0, side: DoubleSide });
-  const ringMaterial = new MeshStandardMaterial({ map: voussoirTexture, vertexColors: true, roughness: 0.9, metalness: 0, side: DoubleSide });
+  const viaductMaterial = new MeshStandardMaterial({ map: stoneTextures.map, normalMap: stoneTextures.normalMap, vertexColors: true, roughness: 0.93, metalness: 0, side: DoubleSide });
+  const trimMaterial = new MeshStandardMaterial({ map: trimTextures.map, normalMap: trimTextures.normalMap, vertexColors: true, roughness: 0.9, metalness: 0, side: DoubleSide });
   const metalMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.2 });
   const ballastMaterial = new MeshStandardMaterial({ map: gravelTexture, vertexColors: true, roughness: 1, metalness: 0, side: DoubleSide });
   const railMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.3, side: DoubleSide });
@@ -163,8 +166,8 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
 
   const viaduct = buildViaduct(ground);
   const solids: [BuiltMesh, MeshStandardMaterial, boolean][] = [
-    [viaduct.masonry, masonryMaterial, true],
-    [viaduct.rings, ringMaterial, true],
+    [viaduct.masonry, viaductMaterial, true],
+    [viaduct.trim, trimMaterial, true],
     [viaduct.metal, metalMaterial, true],
     [buildBallast(), ballastMaterial, false],
     [buildRails(), railMaterial, false],
