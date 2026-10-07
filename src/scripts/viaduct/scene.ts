@@ -38,6 +38,7 @@ import { buildHeadLamps, buildTailLamps, buildVehicle } from './trainMesh.ts';
 import { createLiveryTexture, createSkyReflection } from './trainTextures.ts';
 import { CONSIST, createPoses, PHOTO_TIME, placeConsist, trainStateAt, type VehicleSpec } from './train.ts';
 import { buildVegetation } from './vegetation.ts';
+import { windTime } from './wind.ts';
 import { buildTerrainGrid, createGround, type TerrainGrid } from './terrain.ts';
 import { createGravelTexture, createMasonryTexture, createScreeTexture, createVoussoirTexture, loadDetailTexture } from './textures.ts';
 import { buildViaduct } from './viaductMesh.ts';
@@ -417,6 +418,7 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
 
   function renderFrame() {
     placeTrain(clock);
+    windTime.value = clock;
     if (shadowStage >= 2) {
       renderer.shadowMap.autoUpdate = false;
       renderer.shadowMap.needsUpdate = frames % 2 === 0 || viewChanged;
