@@ -31,6 +31,13 @@ const CIRCLE_START_THETA = 20 * DEGREE;
 const APPROACH_HEADING = -10 * DEGREE;
 const APPROACH_RADIUS = 120;
 const APPROACH_STRAIGHT = 220;
+// Further up the hillside the line comes round the toe of a spur: it runs south down the slope,
+// bends left through a 110 m arc and joins the approach heading east. Laid out backwards from the
+// approach, like the approach is from the circle.
+const FAR_HEADING = -90 * DEGREE;
+const FAR_RADIUS = 110;
+const FAR_JOIN_STRAIGHT = 70;
+const FAR_LEG = 70;
 const INNER_RADIUS = 40;
 const EXIT_HEADING = -58 * DEGREE;
 const EXIT_STRAIGHT_AFTER_CROSSING = 140;
@@ -82,6 +89,8 @@ export interface Track {
   crossing: { viaductS: number; exitS: number };
   // Where the circle begins: the approach lies before it.
   circleStartS: number;
+  // Where the approach begins: before it the line is the far end, which bends round a spur.
+  approachS: number;
 }
 
 function advance(pose: Pose, curvature: number, distance: number): Pose {
@@ -117,7 +126,7 @@ function wrapPositive(angle: number): number {
   return ((angle % turn) + turn) % turn;
 }
 
-function createSegments(): { segments: Segment[]; circleStartS: number } {
+function createSegments(): { segments: Segment[]; circleStartS: number; approachS: number } {
   const circleStart = circlePose(CIRCLE_START_THETA);
   const clockwise = (radius: number) => -1 / radius;
 
@@ -126,6 +135,12 @@ function createSegments(): { segments: Segment[]; circleStartS: number } {
   // The approach is laid out backwards from the circle, so that it joins the circle exactly.
   const approachArcStart = advance(circleStart, clockwise(APPROACH_RADIUS), -approachArcLength);
   const approachStart = advance(approachArcStart, 0, -APPROACH_STRAIGHT);
+
+  const farSweep = APPROACH_HEADING - FAR_HEADING;
+  const farArcLength = farSweep * FAR_RADIUS;
+  const farJoinStart = advance(approachStart, 0, -FAR_JOIN_STRAIGHT);
+  const farArcStart = advance(farJoinStart, 1 / FAR_RADIUS, -farArcLength);
+  const farLegStart = advance(farArcStart, 0, -FAR_LEG);
 
   const crossingTheta = VIADUCT_START_THETA - (viaductCrossingOffset() / LOOP_RADIUS);
   const crossing: Pose = { x: LOOP_RADIUS * Math.cos(crossingTheta), n: LOOP_RADIUS * Math.sin(crossingTheta), heading: EXIT_HEADING };
@@ -147,6 +162,9 @@ function createSegments(): { segments: Segment[]; circleStartS: number } {
   const circleSweepEnd = CIRCLE_START_THETA - innerTheta;
 
   const pieces: [number, number, Pose][] = [
+    [FAR_LEG, 0, farLegStart],
+    [farArcLength, 1 / FAR_RADIUS, farArcStart],
+    [FAR_JOIN_STRAIGHT, 0, farJoinStart],
     [APPROACH_STRAIGHT, 0, approachStart],
     [approachArcLength, clockwise(APPROACH_RADIUS), approachArcStart],
     [circleSweepEnd * LOOP_RADIUS, clockwise(LOOP_RADIUS), circleStart],
@@ -161,7 +179,9 @@ function createSegments(): { segments: Segment[]; circleStartS: number } {
     startS += length;
   }
 
-  return { segments, circleStartS: APPROACH_STRAIGHT + approachArcLength };
+  const approachS = FAR_LEG + farArcLength + FAR_JOIN_STRAIGHT;
+
+  return { segments, circleStartS: approachS + APPROACH_STRAIGHT + approachArcLength, approachS };
 }
 
 function viaductCrossingOffset(): number {
@@ -169,7 +189,7 @@ function viaductCrossingOffset(): number {
 }
 
 function createTrack(): Track {
-  const { segments, circleStartS } = createSegments();
+  const { segments, circleStartS, approachS } = createSegments();
   const last = segments[segments.length - 1];
   const length = last.startS + last.length;
   const viaductStartS = circleStartS + ((CIRCLE_START_THETA - VIADUCT_START_THETA) * LOOP_RADIUS);
@@ -231,6 +251,7 @@ function createTrack(): Track {
     viaduct: { startS: viaductStartS, endS: viaductStartS + VIADUCT_LENGTH, arches, piers },
     crossing: { viaductS, exitS },
     circleStartS,
+    approachS,
   };
 }
 

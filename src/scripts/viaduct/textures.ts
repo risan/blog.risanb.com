@@ -87,25 +87,6 @@ export function createMasonryTexture(anisotropy: number): CanvasTexture {
   return finish(canvas, anisotropy);
 }
 
-// Eight radial stones side by side, lighter than the walls; the coordinate wraps every eight.
-export function createVoussoirTexture(anisotropy: number): CanvasTexture {
-  const width = 512;
-  const height = 64;
-  const [canvas, context] = paintCanvas(width, height);
-  const random = mulberry32(9);
-  context.fillStyle = '#8b867c';
-  context.fillRect(0, 0, width, height);
-  const blocks = 8;
-  for (let index = 0; index < blocks; index += 1) {
-    context.fillStyle = stoneColor(random, 198, 0.7);
-    context.fillRect((index * width) / blocks + 2, 3, width / blocks - 4, height - 6);
-    context.fillStyle = 'rgba(255, 252, 244, 0.2)';
-    context.fillRect((index * width) / blocks + 2, 3, width / blocks - 4, 4);
-  }
-
-  return finish(canvas, anisotropy);
-}
-
 export function createGravelTexture(anisotropy: number): CanvasTexture {
   const size = 256;
   const [canvas, context] = paintCanvas(size, size);

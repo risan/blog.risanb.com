@@ -11,6 +11,7 @@ import {
   Color,
   DirectionalLight,
   DoubleSide,
+  Fog,
   HemisphereLight,
   InstancedMesh,
   Matrix4,
@@ -40,8 +41,12 @@ import { CONSIST, createPoses, PHOTO_TIME, placeConsist, trainStateAt, type Vehi
 import { buildVegetation } from './vegetation.ts';
 import { windTime } from './wind.ts';
 import { buildTerrainGrid, createGround, type TerrainGrid } from './terrain.ts';
-import { createGravelTexture, createMasonryTexture, createScreeTexture, createVoussoirTexture, loadDetailTexture } from './textures.ts';
+import { CANOPY_TILE_METRES, createCanopyTexture } from './canopyTexture.ts';
+import { createStoneTextures, createTrimTextures } from './stonework.ts';
+import { createGravelTexture, createMasonryTexture, createScreeTexture, loadDetailTexture } from './textures.ts';
 import { buildViaduct } from './viaductMesh.ts';
+import { buildVillage } from './villageMesh.ts';
+import { createFacadeAtlas, createSlateTexture } from './villageTextures.ts';
 
 export interface ViaductScene {
   start(): void;
@@ -81,6 +86,13 @@ const VIEW_EASE = 0.06;
 const FRAME_COUNTER_EVERY = 15;
 const GRASS_TEXTURE_URL = '/river/grass.webp';
 const ROCK_TILE_METRES = 8;
+// Distance haze, measured along the view from the camera, which stands 500 m back from the point
+// the view is centred on. At a low tilt the depth grows fast up the screen: the loop in the default
+// view lies at about 500 and keeps its colours, and the far mountain sides fade into a pale blue-grey.
+const CAMERA_DISTANCE = 500;
+const HAZE_COLOR = 0xb7c5cf;
+const HAZE_START = CAMERA_DISTANCE + 70;
+const HAZE_END = CAMERA_DISTANCE + 420;
 
 function terrainGeometry(grid: TerrainGrid): BufferGeometry {
   const geometry = new BufferGeometry();
@@ -88,6 +100,7 @@ function terrainGeometry(grid: TerrainGrid): BufferGeometry {
   geometry.setAttribute('uv', new BufferAttribute(grid.uvs, 2));
   geometry.setAttribute('color', new BufferAttribute(grid.colors, 3));
   geometry.setAttribute('rock', new BufferAttribute(grid.rock, 1));
+  geometry.setAttribute('forest', new BufferAttribute(grid.forest, 1));
   geometry.setIndex(new BufferAttribute(grid.indices, 1));
   geometry.computeVertexNormals();
 
@@ -114,28 +127,33 @@ export async function createViaductScene(canvas: HTMLCanvasElement): Promise<Via
   const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   const grassDetail = await loadDetailTexture(GRASS_TEXTURE_URL, 0.82, 1.9, anisotropy);
   const rockDetail = createScreeTexture(anisotropy);
+  const canopyDetail = createCanopyTexture(anisotropy);
   grassDetail.wrapS = RepeatWrapping;
   grassDetail.wrapT = RepeatWrapping;
   const masonryTexture = createMasonryTexture(anisotropy);
-  const voussoirTexture = createVoussoirTexture(anisotropy);
+  const stoneTextures = createStoneTextures(tierName === 'high' ? 1024 : 512, anisotropy);
+  const trimTextures = createTrimTextures(anisotropy);
   const gravelTexture = createGravelTexture(anisotropy);
 
   const scene = new Scene();
+  scene.fog = new Fog(HAZE_COLOR, HAZE_START, HAZE_END);
   const ground = createGround();
 
   const terrainMaterial = new MeshStandardMaterial({ vertexColors: true, map: grassDetail, roughness: 1, metalness: 0 });
   terrainMaterial.onBeforeCompile = (shader) => {
     shader.uniforms.rockMap = { value: rockDetail };
     shader.uniforms.rockTile = { value: 1 / ROCK_TILE_METRES };
+    shader.uniforms.canopyMap = { value: canopyDetail };
+    shader.uniforms.canopyTile = { value: 1 / CANOPY_TILE_METRES };
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float rock;\nvarying float vRock;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRock = rock;\nvWorldPosition = position;\nvWorldNormal = normal;');
+      .replace('#include <common>', '#include <common>\nattribute float rock;\nattribute float forest;\nvarying float vRock;\nvarying float vForest;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRock = rock;\nvForest = forest;\nvWorldPosition = position;\nvWorldNormal = normal;');
     // The scree is mapped from three sides by world position, so it does not stretch on steep
     // slopes: each side counts as much as the ground faces it.
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform sampler2D rockMap;\nuniform float rockTile;\nvarying float vRock;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;',
+        '#include <common>\nuniform sampler2D rockMap;\nuniform float rockTile;\nuniform sampler2D canopyMap;\nuniform float canopyTile;\nvarying float vRock;\nvarying float vForest;\nvarying vec3 vWorldPosition;\nvarying vec3 vWorldNormal;',
       )
       .replace(
         '#include <map_fragment>',
@@ -146,7 +164,8 @@ vec3 rockSample =
   texture2D(rockMap, vWorldPosition.zy * rockTile).rgb * triplanarWeight.x +
   texture2D(rockMap, vWorldPosition.xz * rockTile).rgb * triplanarWeight.y +
   texture2D(rockMap, vWorldPosition.xy * rockTile).rgb * triplanarWeight.z;
-diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
+vec3 canopySample = texture2D(canopyMap, vWorldPosition.xz * canopyTile).rgb;
+diffuseColor.rgb *= mix(mix(grassSample, rockSample, vRock), canopySample, vForest);`,
       );
   };
 
@@ -155,7 +174,8 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   scene.add(terrain);
 
   const masonryMaterial = new MeshStandardMaterial({ map: masonryTexture, vertexColors: true, roughness: 0.93, metalness: 0, side: DoubleSide });
-  const ringMaterial = new MeshStandardMaterial({ map: voussoirTexture, vertexColors: true, roughness: 0.9, metalness: 0, side: DoubleSide });
+  const viaductMaterial = new MeshStandardMaterial({ map: stoneTextures.map, normalMap: stoneTextures.normalMap, vertexColors: true, roughness: 0.93, metalness: 0, side: DoubleSide });
+  const trimMaterial = new MeshStandardMaterial({ map: trimTextures.map, normalMap: trimTextures.normalMap, vertexColors: true, roughness: 0.9, metalness: 0, side: DoubleSide });
   const metalMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.2 });
   const ballastMaterial = new MeshStandardMaterial({ map: gravelTexture, vertexColors: true, roughness: 1, metalness: 0, side: DoubleSide });
   const railMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.3, side: DoubleSide });
@@ -163,8 +183,8 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
 
   const viaduct = buildViaduct(ground);
   const solids: [BuiltMesh, MeshStandardMaterial, boolean][] = [
-    [viaduct.masonry, masonryMaterial, true],
-    [viaduct.rings, ringMaterial, true],
+    [viaduct.masonry, viaductMaterial, true],
+    [viaduct.trim, trimMaterial, true],
     [viaduct.metal, metalMaterial, true],
     [buildBallast(), ballastMaterial, false],
     [buildRails(), railMaterial, false],
@@ -198,6 +218,16 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   wallsMesh.castShadow = true;
   wallsMesh.receiveShadow = true;
   scene.add(propsMesh, wallsMesh);
+
+  const village = buildVillage(scenery.houses, ground);
+  const villageWalls = new Mesh(toGeometry(village.walls), new MeshStandardMaterial({ map: createFacadeAtlas(anisotropy), vertexColors: true, roughness: 0.92, metalness: 0 }));
+  const villageRoofs = new Mesh(toGeometry(village.roofs), new MeshStandardMaterial({ map: createSlateTexture(anisotropy), vertexColors: true, roughness: 0.85, metalness: 0 }));
+  for (const mesh of [villageWalls, villageRoofs]) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  }
+
   for (const mesh of buildVegetation(scenery, tierName === 'high', rockDetail, anisotropy).meshes) {
     scene.add(mesh);
   }
@@ -351,7 +381,7 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     const [lookX, lookZ] = lookDirection(frame);
     const horizontal = Math.cos(frame.elevation);
     const direction: [number, number, number] = [lookX * horizontal, -Math.sin(frame.elevation), lookZ * horizontal];
-    const distance = 500;
+    const distance = CAMERA_DISTANCE;
     camera.left = -frame.halfWidth;
     camera.right = frame.halfWidth;
     camera.top = frame.halfHeight;

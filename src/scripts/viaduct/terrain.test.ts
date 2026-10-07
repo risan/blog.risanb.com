@@ -58,3 +58,17 @@ test('the hillside rises above the upper track', () => {
   const upper = track.sample(track.circleStartS - 100);
   assert.ok(ground.heightAt(upper.x, upper.z - 60) > ground.heightAt(upper.x, upper.z) + 20);
 });
+
+test('the meadow inside the loop is a low mound, a few metres above its edges', () => {
+  const edge = ground.heightAt(0, -55);
+  const middle = ground.heightAt(-6, 12);
+  assert.ok(middle - edge > 3, `mound ${middle - edge} m`);
+});
+
+test('the low curved wall stands on a terrace edge: the ground steps up by half a metre or more', () => {
+  const [wallX, wallZ] = [-36, -1];
+  const [acrossX, acrossZ] = [0.81, 0.58];
+  const lower = ground.heightAt(wallX + acrossX * 6, wallZ + acrossZ * 6);
+  const upper = ground.heightAt(wallX - acrossX * 6, wallZ - acrossZ * 6);
+  assert.ok(Math.abs(upper - lower) > 0.5, `step ${upper - lower}`);
+});

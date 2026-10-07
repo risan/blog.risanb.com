@@ -33,9 +33,10 @@ export const TRAIN_LENGTH = CONSIST.reduce((total, vehicle) => total + vehicle.l
 
 export const SPEED = 13;
 const PAUSE_SECONDS = 4;
-// The head has entered the picture at ENTRY_S and the whole train has left it by EXIT_S.
-const ENTRY_S = 150;
-const EXIT_S = 865;
+// The head enters the world at the far end of the line (the edge of the ground) and the whole
+// train has left the picture by EXIT_S, past the exit track's last curve.
+const ENTRY_S = 0;
+const EXIT_S = track.approachS + 865;
 // Where the head stands in the photograph: on the first arches at the south end of the viaduct.
 const PHOTO_HEAD_S = track.viaduct.startS + 100;
 

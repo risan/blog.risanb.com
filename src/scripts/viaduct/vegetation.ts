@@ -27,6 +27,7 @@ import {
   buildBushCrown,
   buildConiferCrown,
   buildConiferTrunk,
+  buildFarSpruce,
   CONIFER_HEIGHT,
   CONIFER_RADIUS,
 } from './treeMesh.ts';
@@ -119,6 +120,26 @@ export interface Vegetation {
   meshes: InstancedMesh[];
 }
 
+// The far forest is plain cones, a spruce of two tiers each, in the colour of each tree. They carry
+// no wind and cast no shadow: the mountain sides are seen small.
+function buildFarForest(trees: Scenery['farTrees'], high: boolean): InstancedMesh[] {
+  const shown = high ? trees : trees.filter((_, index) => index % 4 === 0);
+  const dummy = new Object3D();
+  const mesh = new InstancedMesh(toGeometry(buildFarSpruce()), new MeshStandardMaterial({ vertexColors: true, roughness: 1 }), shown.length);
+  shown.forEach((tree, index) => {
+    dummy.position.set(tree.x, tree.y - 0.5, tree.z);
+    dummy.rotation.set(0, index, 0);
+    dummy.scale.set(tree.radius, tree.height, tree.radius);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(index, dummy.matrix);
+    mesh.setColorAt(index, colorOf(tree.color, 1.2));
+  });
+
+  mesh.frustumCulled = false;
+
+  return [mesh];
+}
+
 export function buildVegetation(scenery: Scenery, high: boolean, rockTexture: Texture, anisotropy: number): Vegetation {
   const dummy = new Object3D();
   const textureSize = high ? 512 : 256;
@@ -161,8 +182,10 @@ export function buildVegetation(scenery: Scenery, high: boolean, rockTexture: Te
     needles.setColorAt(index, colorOf(tree.color, NEEDLE_GAIN));
   });
 
-  const bushes = new InstancedMesh(toGeometry(buildBushCrown(high ? 36 : 20)), bushMaterial, scenery.bushes.length);
-  scenery.bushes.forEach((bush, index) => {
+  // Phones draw half of the hedges.
+  const allBushes = [...scenery.bushes, ...scenery.orchard, ...(high ? scenery.hedges : scenery.hedges.filter((_, index) => index % 2 === 0))];
+  const bushes = new InstancedMesh(toGeometry(buildBushCrown(high ? 36 : 20)), bushMaterial, allBushes.length);
+  allBushes.forEach((bush, index) => {
     dummy.position.set(bush.x, bush.y, bush.z);
     dummy.rotation.set(0, index, 0);
     dummy.scale.set(bush.size, bush.size, bush.size);
@@ -201,6 +224,8 @@ export function buildVegetation(scenery: Scenery, high: boolean, rockTexture: Te
     mesh.frustumCulled = false;
     meshes.push(mesh);
   }
+
+  meshes.push(...buildFarForest(scenery.farTrees, high));
 
   return { meshes };
 }

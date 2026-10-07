@@ -91,23 +91,23 @@ export interface ViewState {
   panZ: number;
 }
 
-export const MIN_ZOOM = 1;
+export const MIN_ZOOM = 0.5;
 export const MAX_ZOOM = 4;
 export const MIN_ELEVATION = 15 * DEGREE;
 export const MAX_ELEVATION = 75 * DEGREE;
 export const MAX_TURN = 40 * DEGREE;
 // The lowest the terrain gets in each 25 m band of z from the south edge of the bounds to the
 // north, less a margin. The hillside to the north is high, the valley floor in the south low.
-const GROUND_FLOOR = [58, 35, 21, 15, 9, 0, -1, -4, -4, -4, -5, -6, -7, -8, -7];
+const GROUND_FLOOR = [34, 33, 32, 32, 30, 29, 27, 21, 15, 8, 0, -1, -4, -4, -4, -5, -6, -7, -8, -8, -3, 1, 10, 21, 30, 31, 31, 32, 32];
 const GROUND_FLOOR_BAND = 25;
 // The highest the terrain reaches along each edge of the bounds, plus a margin, in 25 m bands
 // running south to north (west, east) and west to east (north, south). A line of sight that
 // passes lower than this where it crosses an edge slips under the world instead of meeting it.
 const EDGE_CEILING = {
-  west: [72, 62, 40, 27, 25, 23, 20, 16, 16, 16, 14, 13, 13, 12, 11],
-  east: [94, 94, 93, 90, 90, 87, 62, 40, 38, 38, 34, 36, 36, 35, 32],
-  north: [73, 74, 71, 71, 68, 70, 69, 68, 67, 64, 65, 66, 70, 80, 90, 92],
-  south: [12, 12, 11, 12, 11, 10, 10, 9, 9, 7, 6, 2, 6, 18, 32, 33],
+  west: [111, 117, 119, 119, 118, 111, 109, 104, 100, 102, 103, 103, 102, 101, 104, 108, 108, 104, 102, 102, 100, 104, 111, 116, 129, 133, 135, 134, 125],
+  east: [292, 266, 245, 199, 125, 95, 95, 94, 91, 91, 87, 60, 41, 40, 39, 35, 37, 37, 36, 34, 36, 47, 56, 68, 70, 69, 67, 70, 70],
+  north: [110, 98, 95, 101, 103, 120, 118, 109, 125, 153, 176, 179, 184, 197, 198, 198, 198, 207, 214, 216, 211, 223, 244, 270, 267, 275, 278, 282, 292],
+  south: [121, 106, 82, 79, 69, 52, 47, 48, 48, 48, 49, 45, 44, 44, 44, 44, 41, 41, 42, 42, 41, 40, 39, 41, 42, 48, 59, 66, 69],
 };
 export type Edge = keyof typeof EDGE_CEILING;
 const RAY_STEP = 1;
@@ -227,7 +227,8 @@ function clamp(value: number, low: number, high: number): number {
 }
 
 // The nearest view the camera may take. A view that would show the edge of the world is pulled
-// back toward the centre first, and zoomed in when the centre is not enough.
+// back toward the centre first. When even the centre cannot take that zoom, the zoom is raised
+// only as far as the asked pan allows, and the pan is pulled back when that is not enough.
 export function clampView(aspect: number, view: ViewState): ViewState {
   const base = frameForAspect(aspect);
   const limited: ViewState = {
@@ -237,34 +238,45 @@ export function clampView(aspect: number, view: ViewState): ViewState {
     panX: clamp(view.panX, TERRAIN_BOUNDS.minX + PAN_MARGIN - base.target[0], TERRAIN_BOUNDS.maxX - PAN_MARGIN - base.target[0]),
     panZ: clamp(view.panZ, TERRAIN_BOUNDS.minZ + PAN_MARGIN - base.target[2], TERRAIN_BOUNDS.maxZ - PAN_MARGIN - base.target[2]),
   };
-  if (looksOnlyAtTerrain(frameForView(aspect, limited))) {
+  const fits = (candidate: ViewState) => looksOnlyAtTerrain(frameForView(aspect, candidate));
+  if (fits(limited)) {
     return limited;
   }
 
   const centred = { ...limited, panX: 0, panZ: 0 };
-  if (looksOnlyAtTerrain(frameForView(aspect, centred))) {
-    // The largest share of the pan that still fits.
+  let zoom = limited.zoom;
+  while (!fits({ ...centred, zoom }) && zoom < 64) {
+    zoom *= 1.02;
+  }
+
+  // The largest share of the pan that still fits at this zoom.
+  const pullBack = (at: number): ViewState => {
     let low = 0;
     let high = 1;
     for (let step = 0; step < FIT_STEPS; step += 1) {
       const middle = (low + high) / 2;
-      const attempt = { ...limited, panX: limited.panX * middle, panZ: limited.panZ * middle };
-      if (looksOnlyAtTerrain(frameForView(aspect, attempt))) {
+      const attempt = { ...limited, zoom: at, panX: limited.panX * middle, panZ: limited.panZ * middle };
+      if (fits(attempt)) {
         low = middle;
       } else {
         high = middle;
       }
     }
 
-    return { ...limited, panX: limited.panX * low, panZ: limited.panZ * low };
+    return { ...limited, zoom: at, panX: limited.panX * low, panZ: limited.panZ * low };
+  };
+
+  if (zoom === limited.zoom) {
+    return pullBack(zoom);
   }
 
-  let zoom = limited.zoom;
-  while (!looksOnlyAtTerrain(frameForView(aspect, { ...centred, zoom })) && zoom < 64) {
-    zoom *= 1.02;
+  // The centre needed a higher zoom. The asked pan may well need less.
+  let panned = limited.zoom;
+  while (panned < zoom && !fits({ ...limited, zoom: panned })) {
+    panned *= 1.02;
   }
 
-  return { ...centred, zoom };
+  return panned < zoom ? { ...limited, zoom: panned } : pullBack(zoom);
 }
 
 // Moves the view so the ground follows a drag of the given size, which is a share of the screen

@@ -5,7 +5,9 @@
 // the direction of travel). The line runs clockwise, so the right side faces the middle of the
 // loop and the left side faces the valley, which is the side the camera sees.
 
+import { mulberry32 } from '../river/world.ts';
 import { hexToLinear, MeshBuilder, scaleColor, type BuiltMesh, type Rgb, type Vec3 } from './meshBuilder.ts';
+import { SLAB_LENGTH, SLAB_THICKNESS, SLAB_V, STONE_TILE, TRIM, TRIM_REPEAT, VOUSSOIR_V } from './stoneLayout.ts';
 import { ARCH_SPAN, DECK_WIDTH, offsetFromTrack, SPRINGING_BELOW_CROWN, track, CROWN_BELOW_RAIL } from './track.ts';
 import type { Ground } from './terrain.ts';
 
@@ -15,20 +17,28 @@ const PARAPET_ABOVE_RAIL = 0.25;
 const WING_LENGTH = 7;
 const BATTER = 0.02;
 const ARCH_SEGMENTS = 18;
-const TEXTURE_SIZE = 3.2;
-const RING_WIDTH = 0.7;
+const VOUSSOIRS = 42;
+const VOUSSOIR_LONG = 0.74;
+const VOUSSOIR_SHORT = 0.6;
 const RING_PROUD = 0.04;
-const LEDGE_OUT = 0.14;
-const LEDGE_DROP_FROM_RAIL = -0.5;
-const LEDGE_HEIGHT = 0.28;
+const CORNICE_OUT = 0.16;
+const CORBEL_SPACING = SLAB_LENGTH;
+// The band of darker stone under the cornice.
+const FRIEZE_HEIGHT = 0.5;
+const CORBEL_SIZE: Vec3 = [0.3, 0.26, 0.2];
+const SPRINGING_CORBEL_SIZE: Vec3 = [0.34, 0.26, 0.36];
+const IMPOST_HEIGHT = 0.14;
+const IMPOST_PROUD = 0.07;
+const RAIL_HEIGHTS = [0.35, 0.68, 0.95];
+const POST_SPACING = 2;
 
 const WHITE: Rgb = [1, 1, 1];
-const LIGHT_STONE: Rgb = [1.12, 1.1, 1.05];
+const FRIEZE: Rgb = [0.66, 0.68, 0.72];
 const METAL: Rgb = hexToLinear(0xb9bec2);
 
 export interface ViaductMeshes {
   masonry: BuiltMesh;
-  rings: BuiltMesh;
+  trim: BuiltMesh;
   metal: BuiltMesh;
 }
 
@@ -46,18 +56,22 @@ function place(s: number, lateral: number, y: number): Vec3 {
 
 export function buildViaduct(ground: Ground): ViaductMeshes {
   const masonry = new MeshBuilder();
-  const rings = new MeshBuilder();
+  const trim = new MeshBuilder();
   const metal = new MeshBuilder();
   const { startS, endS, arches, piers } = track.viaduct;
   const railAt = (s: number) => track.sample(s).y;
   const topAt = (s: number) => railAt(s) + PARAPET_ABOVE_RAIL;
   const springingAt = (s: number) => railAt(s) - CROWN_BELOW_RAIL - SPRINGING_BELOW_CROWN;
   const textureOrigin = startS;
+  const random = mulberry32(3);
+  // Courses are level at a fixed size: u follows the line, v follows the height.
+  const stoneUv = (s: number, y: number): [number, number] => [(s - textureOrigin) / STONE_TILE, y / STONE_TILE];
+  const slabUv = (s: number, row: number): [number, number] => [(s - textureOrigin) / TRIM_REPEAT, SLAB_V[0] + (SLAB_V[1] - SLAB_V[0]) * row];
+  const slabCentre = (index: number): [number, number] => [(index + 0.5) / TRIM.slabCount, (SLAB_V[0] + SLAB_V[1]) / 2];
 
   // A vertical wall strip at a fixed lateral offset, facing outwards. `side` is +1 for the right
   // (loop side) and -1 for the left (valley side).
   function wallStrip(builder: MeshBuilder, side: 1 | -1, lateral: number, columns: Column[], color: Rgb, facing: 1 | -1 = side) {
-    const scale = TEXTURE_SIZE;
     for (let index = 0; index < columns.length - 1; index += 1) {
       const a = columns[index];
       const b = columns[index + 1];
@@ -65,12 +79,11 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
       const p10 = place(b.s, side * lateral, b.bottom);
       const p11 = place(b.s, side * lateral, b.top);
       const p01 = place(a.s, side * lateral, a.top);
-      const uv = (c: Column, y: number): [number, number] => [(c.s - textureOrigin) / scale, y / scale];
       const coords: [[number, number], [number, number], [number, number], [number, number]] = [
-        uv(a, a.bottom),
-        uv(b, b.bottom),
-        uv(b, b.top),
-        uv(a, a.top),
+        stoneUv(a.s, a.bottom),
+        stoneUv(b.s, b.bottom),
+        stoneUv(b.s, b.top),
+        stoneUv(a.s, a.top),
       ];
       if (facing === 1) {
         builder.flatQuad(p00, p10, p11, p01, coords, color);
@@ -78,6 +91,13 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
         builder.flatQuad(p10, p00, p01, p11, [coords[1], coords[0], coords[3], coords[2]], color);
       }
     }
+  }
+
+  // The outer face of a wall: courses up to the frieze, then the frieze under the cornice.
+  function facade(side: 1 | -1, columns: Column[]) {
+    const friezeBottom = (column: Column) => Math.max(column.bottom, column.top - FRIEZE_HEIGHT);
+    wallStrip(masonry, side, FACE_OFFSET, columns.map((column) => ({ ...column, top: friezeBottom(column) })), WHITE);
+    wallStrip(masonry, side, FACE_OFFSET, columns.map((column) => ({ ...column, bottom: friezeBottom(column) })), FRIEZE);
   }
 
   function spacedColumns(from: number, to: number, bottom: (s: number) => number, top: (s: number) => number, step: number): Column[] {
@@ -120,32 +140,51 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
       const p10 = place(to, side * wide, bottom);
       const p11 = place(to, side * FACE_OFFSET, top);
       const p01 = place(from, side * FACE_OFFSET, top);
-      const uv = (s: number, y: number): [number, number] => [(s - textureOrigin) / TEXTURE_SIZE, y / TEXTURE_SIZE];
       const coords: [[number, number], [number, number], [number, number], [number, number]] = [
-        uv(from, bottom),
-        uv(to, bottom),
-        uv(to, top),
-        uv(from, top),
+        stoneUv(from, bottom),
+        stoneUv(to, bottom),
+        stoneUv(to, top),
+        stoneUv(from, top),
       ];
       if (side === 1) {
         masonry.flatQuad(p00, p10, p11, p01, coords, WHITE);
       } else {
         masonry.flatQuad(p10, p00, p01, p11, [coords[1], coords[0], coords[3], coords[2]], WHITE);
       }
+
+      const middle = (from + to) / 2;
+      trim.box(place(middle, side * (FACE_OFFSET + IMPOST_PROUD / 2), top - IMPOST_HEIGHT), [to - from, IMPOST_HEIGHT, IMPOST_PROUD], track.sample(middle).heading, WHITE, {
+        uv: slabCentre(Math.floor(random() * TRIM.slabCount)),
+      });
     }
 
+    // The end faces start from the same courses as the sides. `phase` shifts the joints so two
+    // neighbouring piers do not repeat each other.
     const endFace = (s: number, facing: 1 | -1) => {
       const left = place(s, -wide, bottom);
       const right = place(s, wide, bottom);
       const rightTop = place(s, FACE_OFFSET, top);
       const leftTop = place(s, -FACE_OFFSET, top);
-      const width = (2 * wide) / TEXTURE_SIZE;
-      const height = (top - bottom) / TEXTURE_SIZE;
-      const coords: [[number, number], [number, number], [number, number], [number, number]] = [[0, 0], [width, 0], [width, height], [0, height]];
+      const phase = (s - textureOrigin) * 0.37;
+      const uv = (lateral: number, y: number): [number, number] => [(lateral + phase) / STONE_TILE, y / STONE_TILE];
+      const coords: [[number, number], [number, number], [number, number], [number, number]] = [
+        uv(-wide, bottom),
+        uv(wide, bottom),
+        uv(FACE_OFFSET, top),
+        uv(-FACE_OFFSET, top),
+      ];
       if (facing === 1) {
         masonry.flatQuad(right, left, leftTop, rightTop, [coords[1], coords[0], coords[3], coords[2]], scaleColor(WHITE, 0.92));
       } else {
         masonry.flatQuad(left, right, rightTop, leftTop, coords, scaleColor(WHITE, 0.92));
+      }
+
+      // The stubs the timber centring rested on, standing out under the springing of the arch.
+      const [depth, height] = SPRINGING_CORBEL_SIZE;
+      for (const lateral of [-1.35, 0, 1.35]) {
+        trim.box(place(s + (facing * depth) / 2, lateral, top - height), SPRINGING_CORBEL_SIZE, track.sample(s).heading, WHITE, {
+          uv: slabCentre(Math.floor(random() * TRIM.slabCount)),
+        });
       }
     };
     if (endFaces.start) {
@@ -167,11 +206,11 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
         columns.push({ s, bottom: archIntrados(arch, offset), top: topAt(s) });
       }
 
-      wallStrip(masonry, side, FACE_OFFSET, columns, WHITE);
+      facade(side, columns);
     }
 
     for (const pier of piers) {
-      wallStrip(masonry, side, FACE_OFFSET, spacedColumns(pier.startS, pier.endS, springingAt, topAt, 4), WHITE);
+      facade(side, spacedColumns(pier.startS, pier.endS, springingAt, topAt, 4));
     }
 
     // Abutments above the springing, and the wing walls beyond them.
@@ -180,15 +219,15 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
 
       return Math.min(ground.heightAt(point.x, point.z), springingAt(s)) - 0.2;
     };
-    wallStrip(masonry, side, FACE_OFFSET, spacedColumns(startS, arches[0].startS, abutmentLow, topAt, 4), WHITE);
-    wallStrip(masonry, side, FACE_OFFSET, spacedColumns(arches[arches.length - 1].endS, endS, abutmentLow, topAt, 4), WHITE);
+    facade(side, spacedColumns(startS, arches[0].startS, abutmentLow, topAt, 4));
+    facade(side, spacedColumns(arches[arches.length - 1].endS, endS, abutmentLow, topAt, 4));
     const wingLow = (s: number) => {
       const point = offsetFromTrack(s, side * FACE_OFFSET);
 
       return ground.heightAt(point.x, point.z) - 0.25;
     };
-    wallStrip(masonry, side, FACE_OFFSET, spacedColumns(startS - WING_LENGTH, startS, wingLow, topAt, 1.75), WHITE);
-    wallStrip(masonry, side, FACE_OFFSET, spacedColumns(endS, endS + WING_LENGTH, wingLow, topAt, 1.75), WHITE);
+    facade(side, spacedColumns(startS - WING_LENGTH, startS, wingLow, topAt, 1.75));
+    facade(side, spacedColumns(endS, endS + WING_LENGTH, wingLow, topAt, 1.75));
   }
 
   // Piers under the springing and the abutment bodies.
@@ -208,7 +247,8 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
     pierBody(from, to, top, footingLevel(from, to), { start: startFace, end: endFace });
   }
 
-  // The soffit of each arch: the underside of the vault, lit from the opening.
+  // The soffit of each arch: the underside of the vault, lit from the opening. Its courses run
+  // across the vault, so v follows the length of the curve.
   for (const arch of arches) {
     const radius = ARCH_SPAN / 2;
     const springing = springingAt(arch.centreS);
@@ -219,10 +259,10 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
       const y = springing + radius * Math.sin(angle);
       const tangent = track.sample(s);
       const normal: Vec3 = [tangent.tx * Math.cos(angle), -Math.sin(angle), tangent.tz * Math.cos(angle)];
-      const shade = 0.78;
+      const shade = 0.72;
       rowIndices.push(
         [-FACE_OFFSET, FACE_OFFSET].map((lateral) =>
-          masonry.vertex(place(s, lateral, y), normal, [(s - textureOrigin) / TEXTURE_SIZE, (lateral + FACE_OFFSET) / TEXTURE_SIZE], scaleColor(WHITE, shade)),
+          masonry.vertex(place(s, lateral, y), normal, [(lateral + FACE_OFFSET) / STONE_TILE, (radius * angle) / STONE_TILE], scaleColor(WHITE, shade)),
         ),
       );
     }
@@ -234,44 +274,38 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
     }
   }
 
-  // The voussoir rings: lighter, radially jointed stones framing each arch on both faces.
+  // The voussoir rings: radial stones framing each arch on both faces. Every other stone is
+  // shorter, so the ring steps into the coursed wall like the real one.
+  const voussoirCell = TRIM.width / TRIM.voussoirCells / TRIM.width;
   for (const side of [1, -1] as const) {
     for (const arch of arches) {
       const springing = springingAt(arch.centreS);
       const inner = ARCH_SPAN / 2;
-      const outer = inner + RING_WIDTH;
-      const blocksAround = 22;
       const lateral = side * (FACE_OFFSET + RING_PROUD);
-      const ring: [number, number][] = [];
-      for (let index = 0; index <= ARCH_SEGMENTS; index += 1) {
-        const angle = (Math.PI * index) / ARCH_SEGMENTS;
-        ring.push([angle, index]);
-      }
-
-      for (let index = 0; index < ARCH_SEGMENTS; index += 1) {
-        const [angleA] = ring[index];
-        const [angleB] = ring[index + 1];
-        const point = (angle: number, radius: number): Vec3 => {
-          const s = arch.centreS - radius * Math.cos(angle);
-
-          return place(s, lateral, springing + radius * Math.sin(angle));
-        };
-        const uA = (angleA / Math.PI) * (blocksAround / 8);
-        const uB = (angleB / Math.PI) * (blocksAround / 8);
+      for (let index = 0; index < VOUSSOIRS; index += 1) {
+        const angleA = (Math.PI * index) / VOUSSOIRS;
+        const angleB = (Math.PI * (index + 1)) / VOUSSOIRS;
+        const length = (index % 2 === 0 ? VOUSSOIR_LONG : VOUSSOIR_SHORT) + random() * 0.06;
+        const point = (angle: number, radius: number): Vec3 => place(arch.centreS - radius * Math.cos(angle), lateral, springing + radius * Math.sin(angle));
+        const cell = Math.floor(random() * TRIM.voussoirCells);
+        const u0 = cell * voussoirCell + 0.004;
+        const u1 = (cell + 1) * voussoirCell - 0.004;
+        const v0 = VOUSSOIR_V[0];
+        const v1 = v0 + (VOUSSOIR_V[1] - v0) * (length / (VOUSSOIR_LONG + 0.06));
         const p00 = point(angleA, inner);
         const p10 = point(angleB, inner);
-        const p11 = point(angleB, outer);
-        const p01 = point(angleA, outer);
+        const p11 = point(angleB, inner + length);
+        const p01 = point(angleA, inner + length);
         if (side === 1) {
-          rings.flatQuad(p00, p10, p11, p01, [[uA, 0], [uB, 0], [uB, 1], [uA, 1]], WHITE);
+          trim.flatQuad(p00, p10, p11, p01, [[u0, v0], [u1, v0], [u1, v1], [u0, v1]], WHITE);
         } else {
-          rings.flatQuad(p10, p00, p01, p11, [[uB, 0], [uA, 0], [uA, 1], [uB, 1]], WHITE);
+          trim.flatQuad(p10, p00, p01, p11, [[u1, v0], [u0, v0], [u0, v1], [u1, v1]], WHITE);
         }
       }
     }
   }
 
-  // Parapet: inner faces, the cap, and the ledge under it on the valley side.
+  // Parapet inner faces, the cornice that runs the length of the deck and the coping above it.
   const parapetFrom = startS - WING_LENGTH;
   const parapetTo = endS + WING_LENGTH;
   const railRange = (s: number) => railAt(s) - 0.55;
@@ -279,57 +313,42 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
     // The inner face looks at the track, so it faces the opposite way to the outer face.
     wallStrip(masonry, side, PARAPET_INNER, spacedColumns(parapetFrom, parapetTo, railRange, topAt, 1.75), scaleColor(WHITE, 0.95), (-side) as 1 | -1);
 
-    const step = 1.75;
-    const count = Math.ceil((parapetTo - parapetFrom) / step);
+    const outer = FACE_OFFSET + CORNICE_OUT;
+    const count = Math.ceil((parapetTo - parapetFrom) / SLAB_LENGTH);
     for (let index = 0; index < count; index += 1) {
       const a = parapetFrom + (index * (parapetTo - parapetFrom)) / count;
       const b = parapetFrom + ((index + 1) * (parapetTo - parapetFrom)) / count;
-      const capA = [place(a, side * PARAPET_INNER, topAt(a)), place(a, side * FACE_OFFSET, topAt(a))];
-      const capB = [place(b, side * PARAPET_INNER, topAt(b)), place(b, side * FACE_OFFSET, topAt(b))];
-      const coords: [[number, number], [number, number], [number, number], [number, number]] = [[0, 0], [1, 0], [1, 0.3], [0, 0.3]];
-      if (side === 1) {
-        masonry.flatQuad(capA[0], capB[0], capB[1], capA[1], coords, LIGHT_STONE);
-      } else {
-        masonry.flatQuad(capA[1], capB[1], capB[0], capA[0], coords, LIGHT_STONE);
-      }
+      const topA = topAt(a);
+      const topB = topAt(b);
+      const quad = (points: [Vec3, Vec3, Vec3, Vec3], coords: [[number, number], [number, number], [number, number], [number, number]], reversed: boolean) => {
+        if (reversed) {
+          trim.flatQuad(points[1], points[0], points[3], points[2], [coords[1], coords[0], coords[3], coords[2]], WHITE);
+        } else {
+          trim.flatQuad(points[0], points[1], points[2], points[3], coords, WHITE);
+        }
+      };
+      const bottomA = topA - SLAB_THICKNESS;
+      const bottomB = topB - SLAB_THICKNESS;
+      const slabCoords: [[number, number], [number, number], [number, number], [number, number]] = [slabUv(a, 0), slabUv(b, 0), slabUv(b, 1), slabUv(a, 1)];
+      // The coping on top, the front of the slab and its underside, each wound to face out.
+      quad([place(a, side * PARAPET_INNER, topA), place(b, side * PARAPET_INNER, topB), place(b, side * outer, topB), place(a, side * outer, topA)], slabCoords, side === 1);
+      quad([place(a, side * outer, bottomA), place(b, side * outer, bottomB), place(b, side * outer, topB), place(a, side * outer, topA)], slabCoords, side === -1);
+      quad([place(a, side * FACE_OFFSET, bottomA), place(b, side * FACE_OFFSET, bottomB), place(b, side * outer, bottomB), place(a, side * outer, bottomA)], slabCoords, side === -1);
+    }
+
+    // The corbels under the slab.
+    const [length, height, depth] = CORBEL_SIZE;
+    for (let s = parapetFrom + CORBEL_SPACING / 2; s < parapetTo; s += CORBEL_SPACING) {
+      trim.box(place(s, side * (FACE_OFFSET + depth / 2), topAt(s) - SLAB_THICKNESS - height), [length, height, depth], track.sample(s).heading, WHITE, {
+        uv: slabCentre(Math.floor(random() * TRIM.slabCount)),
+      });
     }
   }
 
-  // The ledge: a slightly proud band under the parapet on the valley side.
-  {
-    const side = -1 as const;
-    const step = 1.75;
-    const count = Math.ceil((endS - startS) / step);
-    for (let index = 0; index < count; index += 1) {
-      const a = startS + (index * (endS - startS)) / count;
-      const b = startS + ((index + 1) * (endS - startS)) / count;
-      const lateral = side * (FACE_OFFSET + LEDGE_OUT);
-      const bottomA = railAt(a) + LEDGE_DROP_FROM_RAIL;
-      const bottomB = railAt(b) + LEDGE_DROP_FROM_RAIL;
-      const uv = (s: number, y: number): [number, number] => [(s - textureOrigin) / TEXTURE_SIZE, y / TEXTURE_SIZE];
-      masonry.flatQuad(
-        place(b, lateral, bottomB),
-        place(a, lateral, bottomA),
-        place(a, lateral, bottomA + LEDGE_HEIGHT),
-        place(b, lateral, bottomB + LEDGE_HEIGHT),
-        [uv(b, bottomB), uv(a, bottomA), uv(a, bottomA + LEDGE_HEIGHT), uv(b, bottomB + LEDGE_HEIGHT)],
-        LIGHT_STONE,
-      );
-      masonry.flatQuad(
-        place(a, side * FACE_OFFSET, bottomA + LEDGE_HEIGHT),
-        place(a, lateral, bottomA + LEDGE_HEIGHT),
-        place(b, lateral, bottomB + LEDGE_HEIGHT),
-        place(b, side * FACE_OFFSET, bottomB + LEDGE_HEIGHT),
-        [[0, 0], [1, 0], [1, 0.4], [0, 0.4]],
-        LIGHT_STONE,
-      );
-    }
-  }
-
-  // Railing: a post every 2.4 m and two thin rails, on both sides, over the viaduct and its wings.
+  // Railing: a post every 2 m and three thin rails, on both sides, over the viaduct and its wings.
   const railingLateral = FACE_OFFSET - 0.2;
   for (const side of [1, -1] as const) {
-    const postCount = Math.round((parapetTo - parapetFrom) / 2.4);
+    const postCount = Math.round((parapetTo - parapetFrom) / POST_SPACING);
     for (let index = 0; index <= postCount; index += 1) {
       const s = parapetFrom + (index * (parapetTo - parapetFrom)) / postCount;
       const point = offsetFromTrack(s, side * railingLateral);
@@ -337,8 +356,8 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
       metal.box([point.x, topAt(s), point.z], [0.07, 0.95, 0.07], tangent.heading, METAL);
     }
 
-    for (const height of [0.5, 0.95]) {
-      const step = 1.2;
+    for (const height of RAIL_HEIGHTS) {
+      const step = POST_SPACING;
       const count = Math.ceil((parapetTo - parapetFrom) / step);
       for (let index = 0; index < count; index += 1) {
         const a = parapetFrom + (index * (parapetTo - parapetFrom)) / count;
@@ -353,5 +372,5 @@ export function buildViaduct(ground: Ground): ViaductMeshes {
     }
   }
 
-  return { masonry: masonry.build(), rings: rings.build(), metal: metal.build() };
+  return { masonry: masonry.build(), trim: trim.build(), metal: metal.build() };
 }
