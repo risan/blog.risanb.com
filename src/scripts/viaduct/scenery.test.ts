@@ -42,3 +42,45 @@ test('the woods are dense on the east side between the inner track and the viadu
   const inWood = scenery.trees.filter((tree) => tree.x > 25 && tree.x < 75 && -tree.z > 0 && -tree.z < 60);
   assert.ok(inWood.length >= 15, `only ${inWood.length} trees in the east wood`);
 });
+
+test('the three standing stones stand just beyond the upper end of the low curved wall', () => {
+  const lowWall = scenery.walls.find((wall) => wall.height < 0.6);
+  assert.ok(lowWall);
+  const [endX, endZ] = lowWall.points[lowWall.points.length - 1];
+  assert.equal(scenery.standingStones.length, 3);
+  for (const stone of scenery.standingStones) {
+    assert.ok(stone.z < endZ, 'a stone is not behind the wall end');
+    assert.ok(Math.hypot(stone.x - endX, stone.z - endZ) < 30, 'a stone is far from the wall');
+  }
+});
+
+test('two single trees stand in the meadow on the viaduct side', () => {
+  const loners = scenery.trees.filter((tree) => Math.hypot(tree.x, tree.z) < 55 && tree.x > 0 && tree.z > 0);
+  assert.equal(loners.length, 2);
+});
+
+test('the far forest stands on the mountain sides, clear of the line, the streets and the houses', () => {
+  assert.ok(scenery.farTrees.length > 1000);
+  for (const tree of scenery.farTrees) {
+    assert.ok(ground.distanceToBed(tree.x, tree.z) >= 9, 'far tree on the line');
+    assert.ok(Math.abs(tree.y - ground.heightAt(tree.x, tree.z)) < 1e-9);
+    assert.ok(tree.x < -85 || tree.z < -205 || tree.z > 150 || tree.x > 200, 'far tree in the old default view');
+  }
+});
+
+test('the orchard is rows of small trees on the slope between the main road and the loop, and the gardens have their own', () => {
+  const rows = scenery.orchard.filter((tree) => tree.x < -85 && tree.x > -125 && -tree.z < -50 && -tree.z > -100);
+  assert.ok(rows.length >= 40 && rows.length <= 120, `${rows.length} orchard trees`);
+  assert.ok(scenery.orchard.length > rows.length + 8, 'gardens have fruit trees');
+  assert.ok(scenery.hedges.length >= 40);
+});
+
+test('low dry-stone walls line the village roads, clear of the roads themselves', () => {
+  const village = scenery.walls.filter((wall) => wall.height > 0.9 && wall.height < 1 && wall.thickness === 0.5);
+  assert.ok(village.length >= 15, `${village.length} roadside walls`);
+  for (const wall of village) {
+    for (const [x, z] of wall.points) {
+      assert.ok(scenery.houses.every((house) => Math.hypot(house.x - x, house.z - z) > 3), 'wall inside a house');
+    }
+  }
+});

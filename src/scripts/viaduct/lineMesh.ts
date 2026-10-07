@@ -43,7 +43,8 @@ export interface Mast {
 export function sleeperPlacements(): Placement[] {
   const placements: Placement[] = [];
   const point = track.sample(0);
-  for (let s = 0; s <= track.length; s += SLEEPER_SPACING) {
+  // Counted from where the approach begins, as everything on the line was before it was extended.
+  for (let s = track.approachS % SLEEPER_SPACING; s <= track.length; s += SLEEPER_SPACING) {
     track.sample(s, point);
     placements.push({ x: point.x, y: point.y - 0.15 - 0.08, z: point.z, heading: point.heading });
   }
@@ -125,7 +126,7 @@ export function buildRails(): BuiltMesh {
 // valley side as in the photograph.
 function mastPositions(): Mast[] {
   const masts: Mast[] = [];
-  const first = 12;
+  const first = (track.approachS + 12) % MAST_SPACING;
   for (let s = first; s < track.length - 10; s += MAST_SPACING) {
     masts.push({ s, side: -1 });
   }
@@ -152,9 +153,9 @@ export function buildCatenary(ground: Ground): BuiltMesh {
 
   // The contact wire hangs at 5.5 m, swaying a little from side to side as real wires do.
   let previous: Vec3 | undefined;
-  for (let s = 0; s <= track.length; s += WIRE_STEP) {
+  for (let s = track.approachS % WIRE_STEP; s <= track.length; s += WIRE_STEP) {
     const point = track.sample(s);
-    const sway = Math.sin(s / MAST_SPACING * Math.PI) * WIRE_SWAY;
+    const sway = Math.sin(((s - track.approachS) / MAST_SPACING) * Math.PI) * WIRE_SWAY;
     const position = offsetFromTrack(s, sway);
     const current: Vec3 = [position.x, point.y + WIRE_HEIGHT, position.z];
     if (previous) {

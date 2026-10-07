@@ -113,3 +113,26 @@ test('the line crosses itself only at the viaduct', () => {
     }
   }
 });
+
+test('the far end of the line is continuous in position, heading and grade, with no curve tighter than 100 m', () => {
+  const previous = track.sample(0);
+  const point = track.sample(0);
+  const turnBetween = () => Math.abs(Math.atan2(Math.sin(point.heading - previous.heading), Math.cos(point.heading - previous.heading)));
+  for (let s = 0.5; s <= track.circleStartS + 50; s += 0.5) {
+    track.sample(s - 0.5, previous);
+    track.sample(s, point);
+    assert.ok(Math.abs(Math.hypot(point.x - previous.x, point.z - previous.z) - 0.5) < 1e-4, `position jumps at ${s}`);
+    assert.ok(Math.abs(point.grade - previous.grade) < 1e-9, `the grade changes at ${s}`);
+    // Before the circle nothing is tighter than 100 m; the circle itself is 70 m.
+    const limit = s <= track.circleStartS ? 1 / 100 : 1 / 70;
+    assert.ok(turnBetween() / 0.5 <= limit + 1e-6, `curve tighter than allowed at ${s}`);
+  }
+});
+
+test('the line climbs steadily away from the circle up to a far end that lies far up the hillside', () => {
+  const start = track.sample(0);
+  const approach = track.sample(track.approachS);
+  assert.ok(start.y > approach.y + 8);
+  assert.ok(track.approachS > 250);
+  assert.ok(-start.z > 300);
+});

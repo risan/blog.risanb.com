@@ -115,3 +115,12 @@ test('every bogie pair sits well inside its vehicle', () => {
     assert.ok(vehicle.bogieSpacing > vehicle.length * 0.55 && vehicle.bogieSpacing < vehicle.length * 0.7);
   }
 });
+
+test('the train waits for its trip beyond the far end of the line, outside the ground, so it never pops up in view', () => {
+  const poses = createPoses();
+  const state = trainStateAt(CYCLE_SECONDS - 1);
+  placeConsist(state.headS, state.direction, poses);
+  for (const pose of poses) {
+    assert.ok(pose.z <= -330, `a vehicle waits inside the ground: ${pose.x}, ${pose.z}`);
+  }
+});

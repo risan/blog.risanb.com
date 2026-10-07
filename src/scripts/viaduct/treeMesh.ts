@@ -306,3 +306,26 @@ export function buildConiferCrown(whorls: number, branchesLow: number, branchesH
 
   return builder.build();
 }
+
+// The trees of the far forest, drawn only small: a spruce of two stacked cones, one metre wide and
+// high, darker underneath. It carries a vertex colour for shading, and the instance colour tints it.
+export function buildFarSpruce(): BuiltMesh {
+  const builder = new MeshBuilder();
+  const sides = 5;
+  const tiers: [number, number, number][] = [[0.08, 0.6, 1], [0.4, 1, 0.64]];
+  for (const [bottom, top, radius] of tiers) {
+    const rim: number[] = [];
+    for (let side = 0; side < sides; side += 1) {
+      const angle = (side / sides) * Math.PI * 2;
+      const outward: Vec3 = [Math.cos(angle), 0.45, Math.sin(angle)];
+      rim.push(builder.vertex([Math.cos(angle) * radius, bottom, Math.sin(angle) * radius], normalize(outward), [0, 0], [0.55, 0.55, 0.55]));
+    }
+
+    const apex = builder.vertex([0, top, 0], [0, 1, 0], [0, 0], [1, 1, 1]);
+    for (let side = 0; side < sides; side += 1) {
+      builder.triangle(rim[(side + 1) % sides], rim[side], apex);
+    }
+  }
+
+  return builder.build();
+}
