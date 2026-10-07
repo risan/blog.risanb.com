@@ -83,12 +83,14 @@ export const MIN_TREE_DISTANCE_TO_VIADUCT = 12;
 export const LANE_HALF_WIDTH = 1.7;
 export const MAX_BUSHES = 60;
 
-// Muted, as in the photograph: mostly olive and deep green, some yellow-ochre, a few rust.
-const BROADLEAF_COLORS = [0x5d7030, 0x4a6429, 0x6b7a34, 0x3f5a2a, 0x55702c, 0x76802f, 0x4d6a2e].map(hexToLinear);
-const OCHRE_COLORS = [0x9a8636, 0x8c7632, 0x7d6430].map(hexToLinear);
-const RUST_COLORS = [0x8f4f26, 0x7d4424].map(hexToLinear);
+// Early autumn in the valley: the broadleaves turning, gold and orange among the last greens,
+// some rust. Conifers stay green.
+const BROADLEAF_COLORS = [0x667a32, 0x587030, 0x76843a, 0x4f6a2e, 0x6a7a30, 0x86882f].map(hexToLinear);
+const GOLD_COLORS = [0xb89a2e, 0xc4a33a, 0xa8862c, 0xd0ac40].map(hexToLinear);
+const ORANGE_COLORS = [0xb8682a, 0xc0782e, 0xa65a24].map(hexToLinear);
+const RUST_COLORS = [0x9a4426, 0x8a3a22].map(hexToLinear);
 const CONIFER_COLORS = [0x2f4f26, 0x38592b, 0x435f2a].map(hexToLinear);
-const BUSH_COLORS = [0x354f24, 0x3d5a26, 0x2f4a22].map(hexToLinear);
+const BUSH_COLORS = [0x4a5a26, 0x5a6228, 0x6e5a28, 0x3f5426].map(hexToLinear);
 const ROCK_COLORS = [0xd2cabb, 0xbfb6a6, 0xe0d9cb, 0xa59c8d].map(hexToLinear);
 
 // Woods and groves as (centre x, centre north, radius, trees, share of conifers, size scale).
@@ -175,11 +177,15 @@ export function createScenery(ground: Ground, seed = 3): Scenery {
 
   function leafColor(): Rgb {
     const roll = random();
-    if (roll < 0.1) {
-      return pick(OCHRE_COLORS);
+    if (roll < 0.28) {
+      return pick(GOLD_COLORS);
     }
 
-    return roll < 0.14 ? pick(RUST_COLORS) : pick(BROADLEAF_COLORS);
+    if (roll < 0.46) {
+      return pick(ORANGE_COLORS);
+    }
+
+    return roll < 0.6 ? pick(RUST_COLORS) : pick(BROADLEAF_COLORS);
   }
 
   const trees: Tree[] = [];
