@@ -170,3 +170,15 @@ test('dragging pans the ground along with the cursor', () => {
   const [x1, y1] = projectToScreen(frameForView(aspect, panned), ...point);
   assert.ok(Math.abs(x1 - x0 - 0.2) < 1e-9 && Math.abs(y1 - y0 + 0.1) < 1e-9);
 });
+
+test('the visitor can zoom out to about half, and the default view zooms out that far', () => {
+  assert.ok(MIN_ZOOM <= 0.5);
+  const view = clampView(2.1, { ...defaultView(2.1), zoom: MIN_ZOOM });
+  assert.ok(view.zoom < 0.65, `zoom ${view.zoom}`);
+});
+
+test('the view can pan over the village and out towards the far curve of the line', () => {
+  const far = track.sample(150);
+  const view = clampView(2.1, { ...defaultView(2.1), elevation: MAX_ELEVATION, zoom: 0.8, panX: far.x - 8, panZ: far.z + 24 });
+  assert.ok(view.panX < -250, `pan ${view.panX}`);
+});
