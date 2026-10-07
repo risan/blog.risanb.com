@@ -14,7 +14,7 @@
     "check:vue": "vue-tsc --noEmit",
     "check:site": "node scripts/check-site.mjs dist",
     "test:river": "node --test src/scripts/river/world.test.ts src/scripts/river/camera.test.ts src/scripts/river/drift.test.ts src/scripts/river/fish.test.ts src/scripts/river/quality.test.ts",
-    "test:viaduct": "node --test src/scripts/viaduct/track.test.ts src/scripts/viaduct/terrain.test.ts src/scripts/viaduct/train.test.ts src/scripts/viaduct/scenery.test.ts src/scripts/viaduct/camera.test.ts src/scripts/viaduct/treeMesh.test.ts src/scripts/viaduct/liveryLayout.test.ts src/scripts/viaduct/trainMesh.test.ts"
+    "test:viaduct": "node --test src/scripts/viaduct/track.test.ts src/scripts/viaduct/terrain.test.ts src/scripts/viaduct/train.test.ts src/scripts/viaduct/scenery.test.ts src/scripts/viaduct/camera.test.ts src/scripts/viaduct/treeMesh.test.ts src/scripts/viaduct/liveryLayout.test.ts src/scripts/viaduct/trainMesh.test.ts src/scripts/viaduct/village.test.ts"
   },
   "engines": {
     "node": ">=20.3.0"

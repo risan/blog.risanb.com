@@ -58,3 +58,19 @@ test('two single trees stand in the meadow on the viaduct side', () => {
   const loners = scenery.trees.filter((tree) => Math.hypot(tree.x, tree.z) < 55 && tree.x > 0 && tree.z > 0);
   assert.equal(loners.length, 2);
 });
+
+test('the far forest stands on the mountain sides, clear of the line, the streets and the houses', () => {
+  assert.ok(scenery.farTrees.length > 1000);
+  for (const tree of scenery.farTrees) {
+    assert.ok(ground.distanceToBed(tree.x, tree.z) >= 9, 'far tree on the line');
+    assert.ok(Math.abs(tree.y - ground.heightAt(tree.x, tree.z)) < 1e-9);
+    assert.ok(tree.x < -110 || tree.z < -205 || tree.z > 150 || tree.x > 200, 'far tree in the old default view');
+  }
+});
+
+test('the orchard is rows of small trees on the slope between the main road and the loop', () => {
+  assert.ok(scenery.orchard.length >= 40 && scenery.orchard.length <= 120);
+  for (const tree of scenery.orchard) {
+    assert.ok(tree.x < -85 && tree.x > -125);
+  }
+});

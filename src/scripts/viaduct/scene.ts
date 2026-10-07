@@ -11,6 +11,7 @@ import {
   Color,
   DirectionalLight,
   DoubleSide,
+  Fog,
   HemisphereLight,
   InstancedMesh,
   Matrix4,
@@ -42,6 +43,8 @@ import { windTime } from './wind.ts';
 import { buildTerrainGrid, createGround, type TerrainGrid } from './terrain.ts';
 import { createGravelTexture, createMasonryTexture, createScreeTexture, createVoussoirTexture, loadDetailTexture } from './textures.ts';
 import { buildViaduct } from './viaductMesh.ts';
+import { buildVillage } from './villageMesh.ts';
+import { createFacadeAtlas, createSlateTexture } from './villageTextures.ts';
 
 export interface ViaductScene {
   start(): void;
@@ -81,6 +84,13 @@ const VIEW_EASE = 0.06;
 const FRAME_COUNTER_EVERY = 15;
 const GRASS_TEXTURE_URL = '/river/grass.webp';
 const ROCK_TILE_METRES = 8;
+// Distance haze, measured along the view from the camera, which stands 500 m back from the point
+// the view is centred on: nothing within 170 m behind that point is touched, so the loop keeps its
+// colour, and the far mountain sides fade into a pale blue-grey.
+const CAMERA_DISTANCE = 500;
+const HAZE_COLOR = 0xb7c5cf;
+const HAZE_START = CAMERA_DISTANCE + 170;
+const HAZE_END = CAMERA_DISTANCE + 900;
 
 function terrainGeometry(grid: TerrainGrid): BufferGeometry {
   const geometry = new BufferGeometry();
@@ -121,6 +131,7 @@ export async function createViaductScene(canvas: HTMLCanvasElement): Promise<Via
   const gravelTexture = createGravelTexture(anisotropy);
 
   const scene = new Scene();
+  scene.fog = new Fog(HAZE_COLOR, HAZE_START, HAZE_END);
   const ground = createGround();
 
   const terrainMaterial = new MeshStandardMaterial({ vertexColors: true, map: grassDetail, roughness: 1, metalness: 0 });
@@ -198,6 +209,16 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   wallsMesh.castShadow = true;
   wallsMesh.receiveShadow = true;
   scene.add(propsMesh, wallsMesh);
+
+  const village = buildVillage(scenery.houses, ground);
+  const villageWalls = new Mesh(toGeometry(village.walls), new MeshStandardMaterial({ map: createFacadeAtlas(anisotropy), vertexColors: true, roughness: 0.92, metalness: 0 }));
+  const villageRoofs = new Mesh(toGeometry(village.roofs), new MeshStandardMaterial({ map: createSlateTexture(anisotropy), vertexColors: true, roughness: 0.85, metalness: 0 }));
+  for (const mesh of [villageWalls, villageRoofs]) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  }
+
   for (const mesh of buildVegetation(scenery, tierName === 'high', rockDetail, anisotropy).meshes) {
     scene.add(mesh);
   }
@@ -351,7 +372,7 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     const [lookX, lookZ] = lookDirection(frame);
     const horizontal = Math.cos(frame.elevation);
     const direction: [number, number, number] = [lookX * horizontal, -Math.sin(frame.elevation), lookZ * horizontal];
-    const distance = 500;
+    const distance = CAMERA_DISTANCE;
     camera.left = -frame.halfWidth;
     camera.right = frame.halfWidth;
     camera.top = frame.halfHeight;
