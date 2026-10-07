@@ -96,7 +96,7 @@ export class MeshBuilder {
     size: Vec3,
     yaw: number,
     color: Rgb,
-    options: { topColor?: Rgb; uvScale?: number; pitch?: number } = {},
+    options: { topColor?: Rgb; uvScale?: number; pitch?: number; uv?: [number, number] } = {},
   ): void {
     const [cx, cy, cz] = centre;
     const [length, height, width] = size;
@@ -127,16 +127,17 @@ export class MeshBuilder {
       g: point(halfLength, hi, halfWidth),
       h: point(-halfLength, hi, halfWidth),
     };
-    const uvLength = length * scale;
-    const uvHeight = height * scale;
-    const uvWidth = width * scale;
+    // `uv` pins the whole box to one point of a texture, for parts that keep their vertex colour.
+    const fixed = options.uv;
+    const uvFor = (across: number, up: number): [[number, number], [number, number], [number, number], [number, number]] =>
+      fixed ? [fixed, fixed, fixed, fixed] : [[0, 0], [across * scale, 0], [across * scale, up * scale], [0, up * scale]];
     // Each face wound counter-clockwise seen from outside.
-    this.flatQuad(p.d, p.c, p.g, p.h, [[0, 0], [uvLength, 0], [uvLength, uvHeight], [0, uvHeight]], color); // across +
-    this.flatQuad(p.b, p.a, p.e, p.f, [[0, 0], [uvLength, 0], [uvLength, uvHeight], [0, uvHeight]], color); // across -
-    this.flatQuad(p.c, p.b, p.f, p.g, [[0, 0], [uvWidth, 0], [uvWidth, uvHeight], [0, uvHeight]], color); // front
-    this.flatQuad(p.a, p.d, p.h, p.e, [[0, 0], [uvWidth, 0], [uvWidth, uvHeight], [0, uvHeight]], color); // back
-    this.flatQuad(p.h, p.g, p.f, p.e, [[0, 0], [uvLength, 0], [uvLength, uvWidth], [0, uvWidth]], top); // top
-    this.flatQuad(p.a, p.b, p.c, p.d, [[0, 0], [uvLength, 0], [uvLength, uvWidth], [0, uvWidth]], color); // bottom
+    this.flatQuad(p.d, p.c, p.g, p.h, uvFor(length, height), color); // across +
+    this.flatQuad(p.b, p.a, p.e, p.f, uvFor(length, height), color); // across -
+    this.flatQuad(p.c, p.b, p.f, p.g, uvFor(width, height), color); // front
+    this.flatQuad(p.a, p.d, p.h, p.e, uvFor(width, height), color); // back
+    this.flatQuad(p.h, p.g, p.f, p.e, uvFor(length, width), top); // top
+    this.flatQuad(p.a, p.b, p.c, p.d, uvFor(length, width), color); // bottom
   }
 
   build(): BuiltMesh {

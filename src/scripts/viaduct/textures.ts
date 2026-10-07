@@ -5,7 +5,7 @@
 import { CanvasTexture, ClampToEdgeWrapping, LinearMipmapLinearFilter, NoColorSpace, RepeatWrapping, SRGBColorSpace, Texture } from 'three';
 import { mulberry32 } from '../river/world.ts';
 
-function paintCanvas(width: number, height: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
+export function paintCanvas(width: number, height: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -17,7 +17,7 @@ function paintCanvas(width: number, height: number): [HTMLCanvasElement, CanvasR
   return [canvas, context];
 }
 
-function finish(canvas: HTMLCanvasElement, anisotropy: number, repeat = true): CanvasTexture {
+export function finish(canvas: HTMLCanvasElement, anisotropy: number, repeat = true): CanvasTexture {
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.wrapS = repeat ? RepeatWrapping : ClampToEdgeWrapping;
