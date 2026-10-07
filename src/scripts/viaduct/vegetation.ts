@@ -71,12 +71,12 @@ function colorOf([red, green, blue]: Rgb, gain = 1): Color {
 
 // A cut-out card material. The cards' normals already point where the light should treat them, so
 // the back of a card must not flip its normal the way a double-sided surface would.
+// No alphaToCoverage: on NVIDIA through ANGLE/D3D11 it sprinkled light speckles along every leaf edge.
 function foliageMaterial(texture: FoliageTexture, wind: WindSettings): MeshStandardMaterial {
   const material = new MeshStandardMaterial({
     map: texture.map,
     alphaMap: texture.alphaMap,
     alphaTest: 0.5,
-    alphaToCoverage: true,
     vertexColors: true,
     roughness: 0.92,
     metalness: 0,
