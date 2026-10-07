@@ -102,8 +102,9 @@ const GROVES: [number, number, number, number, number, number][] = [
   [60, 8, 12, 10, 0, 1.0],
   [100, 22, 27, 30, 0.3, 1.0],
   [96, -36, 16, 12, 0.2, 0.95],
-  // Single tree in the meadow, and the lower left.
-  [-5, -38, 2, 1, 0, 1.05],
+  // The two single trees in the meadow, on the viaduct side, and the lower left.
+  [29, -34, 1.5, 1, 0, 1.05],
+  [9, -47, 1.5, 1, 0, 0.95],
   [-100, 40, 16, 6, 0.1, 0.9],
   [-152, 30, 14, 6, 0.1, 0.9],
   // Along the lane and in the bottom left corner.
@@ -336,7 +337,7 @@ export function createScenery(ground: Ground, seed = 3): Scenery {
     }
   }
 
-  const standingStones: Post[] = ([[-37, 5, 2.6], [-33, 2, 2.1], [-35, 9, 1.6]] as [number, number, number][]).map(([east, north, height]) => {
+  const standingStones: Post[] = ([[-31, 20, 2.6], [-26, 24, 2.1], [-22, 28, 1.6]] as [number, number, number][]).map(([east, north, height]) => {
     const [x, z] = planToWorld([east, north]);
 
     return { x, y: ground.heightAt(x, z), z, height, color: hexToLinear(0xdcd8cf) };

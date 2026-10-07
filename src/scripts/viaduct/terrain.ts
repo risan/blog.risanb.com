@@ -20,6 +20,23 @@ const VIADUCT_CLEAR_HALF_WIDTH = 8;
 const VIADUCT_CLEAR_FADE = 14;
 const VIADUCT_CLEAR_END = 0.5;
 
+// The meadow inside the loop is a low broad mound with soft terrace steps, not a flat lawn. The
+// relief fades out towards the track bed and the viaduct, which keep their own ground.
+const MOUND_CENTRE = { x: -6, z: 12 };
+const MOUND_RADII = { x: 58, z: 52 };
+const MOUND_HEIGHT = 5.5;
+// Terrace banks are arcs about this point (x east, z south), as the low wall's own arc: the wall
+// stands on the middle one. Each step raises the ground on the hillside (inner) side by `rise`.
+const TERRACE_CENTRE = { x: -90, z: -40 };
+const TERRACE_EDGES = [
+  { radius: 83, rise: 0.55 },
+  { radius: 68, rise: 0.7 },
+  { radius: 53, rise: 0.55 },
+];
+const TERRACE_SOFTNESS = 2.4;
+const RELIEF_BED_CLEARANCE = [9, 26];
+const RELIEF_VIADUCT_CLEARANCE = [24, 42];
+
 // How high the arch opening reaches above the ground, arch by arch from the east end. The ground
 // is shaped to this: tall openings over the valley, lower ones where the line meets the slope.
 // The fourth is the arch over the exit track, whose bed is CROSSING_DROP below the rail above.
@@ -180,6 +197,17 @@ export function createGround(): Ground {
     return { distance: Math.sqrt(best), s: axisS[bestIndex] };
   }
 
+  function meadowRelief(x: number, z: number): number {
+    const dome = Math.hypot((x - MOUND_CENTRE.x) / MOUND_RADII.x, (z - MOUND_CENTRE.z) / MOUND_RADII.z);
+    let relief = MOUND_HEIGHT * (1 - smoothstep(0.15, 1.05, dome));
+    const terraceDistance = Math.hypot(x - TERRACE_CENTRE.x, z - TERRACE_CENTRE.z);
+    for (const edge of TERRACE_EDGES) {
+      relief += edge.rise * (1 - smoothstep(edge.radius - TERRACE_SOFTNESS, edge.radius + TERRACE_SOFTNESS, terraceDistance));
+    }
+
+    return relief;
+  }
+
   function heightAt(x: number, z: number): number {
     let weightSum = 0;
     let weighted = 0;
@@ -221,7 +249,12 @@ export function createGround(): Ground {
       height += (target - height) * clearWeight;
     }
 
-    return height;
+    const reliefWeight =
+      smoothstep(RELIEF_BED_CLEARANCE[0], RELIEF_BED_CLEARANCE[1], Math.sqrt(nearest)) *
+      smoothstep(RELIEF_VIADUCT_CLEARANCE[0], RELIEF_VIADUCT_CLEARANCE[1], viaduct.distance) *
+      (1 - smoothstep(0.9, 1.1, Math.hypot((x - MOUND_CENTRE.x) / MOUND_RADII.x, (z - MOUND_CENTRE.z) / MOUND_RADII.z)));
+
+    return height + meadowRelief(x, z) * reliefWeight;
   }
 
   return {

@@ -42,3 +42,19 @@ test('the woods are dense on the east side between the inner track and the viadu
   const inWood = scenery.trees.filter((tree) => tree.x > 25 && tree.x < 75 && -tree.z > 0 && -tree.z < 60);
   assert.ok(inWood.length >= 15, `only ${inWood.length} trees in the east wood`);
 });
+
+test('the three standing stones stand just beyond the upper end of the low curved wall', () => {
+  const lowWall = scenery.walls.find((wall) => wall.height < 0.6);
+  assert.ok(lowWall);
+  const [endX, endZ] = lowWall.points[lowWall.points.length - 1];
+  assert.equal(scenery.standingStones.length, 3);
+  for (const stone of scenery.standingStones) {
+    assert.ok(stone.z < endZ, 'a stone is not behind the wall end');
+    assert.ok(Math.hypot(stone.x - endX, stone.z - endZ) < 30, 'a stone is far from the wall');
+  }
+});
+
+test('two single trees stand in the meadow on the viaduct side', () => {
+  const loners = scenery.trees.filter((tree) => Math.hypot(tree.x, tree.z) < 55 && tree.x > 0 && tree.z > 0);
+  assert.equal(loners.length, 2);
+});
