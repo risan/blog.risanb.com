@@ -25,8 +25,10 @@ import {
   SRGBColorSpace,
   WebGLRenderer,
 } from 'three';
+import { toGeometry } from './geometry.ts';
 import { createQualityGovernor } from '../river/quality.ts';
-import { frameForAspect, lookDirection } from './camera.ts';
+import { clampView, defaultView, frameForView, lookDirection, type ViewState } from './camera.ts';
+import { attachViewControls } from './controls.ts';
 import { buildBallast, buildCatenary, buildRails, sleeperPlacements } from './lineMesh.ts';
 import type { BuiltMesh } from './meshBuilder.ts';
 import { buildProps } from './propsMesh.ts';
@@ -61,25 +63,21 @@ interface DebugOptions {
   tier?: 'high' | 'low';
   // Handed back for measuring draw calls and triangles.
   renderer?: WebGLRenderer;
+  // Where the camera starts, over the default view. Clamped like any other view.
+  view?: Partial<ViewState>;
+  // Handed back for reading the view the visitor has asked for.
+  getView?: () => ViewState;
 }
 
 const SUN_DIRECTION: [number, number, number] = [-0.5, 0.58, 0.64];
-const SHADOW_CENTRE: [number, number, number] = [10, 0, -5];
-const SHADOW_HALF_EXTENT = 135;
+const SHADOW_DISTANCE = 300;
+const SHADOW_MIN_EXTENT = 40;
+const SHADOW_MAX_EXTENT = 135;
+// How quickly the view settles on the one the visitor asked for, in seconds.
+const VIEW_EASE = 0.06;
 const FRAME_COUNTER_EVERY = 15;
 const GRASS_TEXTURE_URL = '/river/grass.webp';
 const ROCK_TILE_METRES = 8;
-
-function toGeometry(mesh: BuiltMesh): BufferGeometry {
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(mesh.positions, 3));
-  geometry.setAttribute('normal', new BufferAttribute(mesh.normals, 3));
-  geometry.setAttribute('uv', new BufferAttribute(mesh.uvs, 2));
-  geometry.setAttribute('color', new BufferAttribute(mesh.colors, 3));
-  geometry.setIndex(new BufferAttribute(mesh.indices, 1));
-
-  return geometry;
-}
 
 function terrainGeometry(grid: TerrainGrid): BufferGeometry {
   const geometry = new BufferGeometry();
@@ -197,7 +195,7 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   wallsMesh.castShadow = true;
   wallsMesh.receiveShadow = true;
   scene.add(propsMesh, wallsMesh);
-  for (const mesh of buildVegetation(scenery, tierName === 'high', rockDetail).meshes) {
+  for (const mesh of buildVegetation(scenery, tierName === 'high', rockDetail, anisotropy).meshes) {
     scene.add(mesh);
   }
 
@@ -268,19 +266,9 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   }
 
   const sun = new DirectionalLight(0xfff0d2, 3.1);
-  sun.position.set(
-    SHADOW_CENTRE[0] + SUN_DIRECTION[0] * 300,
-    SHADOW_CENTRE[1] + SUN_DIRECTION[1] * 300,
-    SHADOW_CENTRE[2] + SUN_DIRECTION[2] * 300,
-  );
-  sun.target.position.set(...SHADOW_CENTRE);
   sun.castShadow = true;
   sun.shadow.mapSize.set(TIERS[tierName].shadowSize, TIERS[tierName].shadowSize);
   const shadowCamera = sun.shadow.camera;
-  shadowCamera.left = -SHADOW_HALF_EXTENT;
-  shadowCamera.right = SHADOW_HALF_EXTENT;
-  shadowCamera.top = SHADOW_HALF_EXTENT;
-  shadowCamera.bottom = -SHADOW_HALF_EXTENT;
   shadowCamera.near = 50;
   shadowCamera.far = 700;
   sun.shadow.bias = -0.0004;
@@ -303,15 +291,39 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   let lost = false;
   let width = 0;
   let height = 0;
+  // The view the visitor asked for, and the one on screen, which eases toward it.
+  let goal = defaultView(1);
+  let current = goal;
+  let viewChanged = true;
   const governor = createQualityGovernor();
 
   function pixelRatio(): number {
     return Math.min(window.devicePixelRatio || 1, TIERS[tierName].pixelRatioCap) * renderScale;
   }
 
+  // The shadow map covers only what is on screen, so zooming in sharpens the shadows. Its centre
+  // moves in whole texels, which keeps the shadow edges from crawling while the view pans.
+  function placeShadow(target: [number, number, number], halfWidth: number, halfDepth: number) {
+    const extent = Math.min(Math.max(Math.ceil((1.1 * Math.hypot(halfWidth, halfDepth)) / 5) * 5, SHADOW_MIN_EXTENT), SHADOW_MAX_EXTENT);
+    const texel = (2 * extent) / sun.shadow.mapSize.x;
+    const toSun = new Vector3(...SUN_DIRECTION).normalize();
+    const right = new Vector3(0, 1, 0).cross(toSun).normalize();
+    const up = new Vector3().crossVectors(toSun, right);
+    const centre = new Vector3(...target);
+    const alongRight = Math.round(centre.dot(right) / texel) * texel;
+    const alongUp = Math.round(centre.dot(up) / texel) * texel;
+    centre.copy(right).multiplyScalar(alongRight).addScaledVector(up, alongUp).addScaledVector(toSun, new Vector3(...target).dot(toSun));
+    shadowCamera.left = -extent;
+    shadowCamera.right = extent;
+    shadowCamera.top = extent;
+    shadowCamera.bottom = -extent;
+    shadowCamera.updateProjectionMatrix();
+    sun.target.position.copy(centre);
+    sun.position.copy(centre).addScaledVector(toSun, SHADOW_DISTANCE);
+  }
+
   function frameCamera() {
-    const aspect = width / height;
-    const frame = frameForAspect(aspect);
+    const frame = frameForView(width / height, current);
     const [lookX, lookZ] = lookDirection(frame);
     const horizontal = Math.cos(frame.elevation);
     const direction: [number, number, number] = [lookX * horizontal, -Math.sin(frame.elevation), lookZ * horizontal];
@@ -327,6 +339,30 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     );
     camera.lookAt(frame.target[0], frame.target[1], frame.target[2]);
     camera.updateProjectionMatrix();
+    placeShadow(frame.target, frame.halfWidth, frame.halfHeight / Math.sin(frame.elevation));
+    viewChanged = true;
+  }
+
+  // Moves the on-screen view toward the goal; true while it is still moving.
+  function easeView(seconds: number): boolean {
+    const amount = 1 - Math.exp(-seconds / VIEW_EASE);
+    const next: ViewState = {
+      zoom: current.zoom + (goal.zoom - current.zoom) * amount,
+      elevation: current.elevation + (goal.elevation - current.elevation) * amount,
+      azimuth: current.azimuth + (goal.azimuth - current.azimuth) * amount,
+      panX: current.panX + (goal.panX - current.panX) * amount,
+      panZ: current.panZ + (goal.panZ - current.panZ) * amount,
+    };
+    const close =
+      Math.abs(goal.zoom - next.zoom) < 0.002 &&
+      Math.abs(goal.elevation - next.elevation) < 0.0005 &&
+      Math.abs(goal.azimuth - next.azimuth) < 0.0005 &&
+      Math.abs(goal.panX - next.panX) < 0.02 &&
+      Math.abs(goal.panZ - next.panZ) < 0.02;
+    current = close ? goal : next;
+    frameCamera();
+
+    return !close;
   }
 
   function resize() {
@@ -337,10 +373,22 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
       return;
     }
 
+    const previousAspect = width / height;
     width = nextWidth;
     height = nextHeight;
     renderer.setPixelRatio(pixelRatio());
     renderer.setSize(width, height, false);
+    const aspect = width / height;
+    if (previousAspect > 0) {
+      // Keep the tilt the visitor chose, measured from the new default.
+      const tilt = defaultView(aspect).elevation - defaultView(previousAspect).elevation;
+      goal = clampView(aspect, { ...goal, elevation: goal.elevation + tilt });
+      current = clampView(aspect, { ...current, elevation: current.elevation + tilt });
+    } else {
+      goal = clampView(aspect, { ...defaultView(aspect), ...debug.view });
+      current = goal;
+    }
+
     frameCamera();
   }
 
@@ -348,8 +396,10 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     placeTrain(clock);
     if (shadowStage >= 2) {
       renderer.shadowMap.autoUpdate = false;
-      renderer.shadowMap.needsUpdate = frames % 2 === 0;
+      renderer.shadowMap.needsUpdate = frames % 2 === 0 || viewChanged;
     }
+
+    viewChanged = false;
 
     renderer.render(scene, camera);
     frames += 1;
@@ -403,6 +453,10 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     const frameMs = lastNow === 0 ? 16 : now - lastNow;
     lastNow = now;
     clock += Math.min(frameMs / 1000, 0.05);
+    if (current !== goal) {
+      easeView(Math.min(frameMs / 1000, 0.05));
+    }
+
     renderFrame();
     adapt(frameMs, now);
     frameHandle = requestAnimationFrame(loop);
@@ -436,9 +490,21 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     }
   });
 
+  function changeView(next: ViewState) {
+    goal = clampView(width / height, next);
+    // Off screen or under reduced motion nothing runs, so the view jumps and draws once.
+    if (!running && !lost) {
+      current = goal;
+      frameCamera();
+      renderFrame();
+    }
+  }
+
   resize();
+  attachViewControls(canvas, { aspect: () => width / height, view: () => goal, change: changeView });
   if (debugHost) {
     debugHost.renderer = renderer;
+    debugHost.getView = () => goal;
   }
 
   return {
@@ -459,6 +525,8 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     },
     renderStill() {
       if (!lost) {
+        current = goal;
+        frameCamera();
         renderFrame();
       }
     },
