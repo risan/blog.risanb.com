@@ -15,6 +15,7 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
   OrthographicCamera,
@@ -33,9 +34,11 @@ import { buildBallast, buildCatenary, buildRails, sleeperPlacements } from './li
 import type { BuiltMesh } from './meshBuilder.ts';
 import { buildProps } from './propsMesh.ts';
 import { createScenery } from './scenery.ts';
-import { buildVehicle } from './trainMesh.ts';
-import { CONSIST, createPoses, PHOTO_TIME, placeConsist, trainStateAt, type VehicleKind } from './train.ts';
+import { buildHeadLamps, buildTailLamps, buildVehicle } from './trainMesh.ts';
+import { createLiveryTexture, createSkyReflection } from './trainTextures.ts';
+import { CONSIST, createPoses, PHOTO_TIME, placeConsist, trainStateAt, type VehicleSpec } from './train.ts';
 import { buildVegetation } from './vegetation.ts';
+import { windTime } from './wind.ts';
 import { buildTerrainGrid, createGround, type TerrainGrid } from './terrain.ts';
 import { createGravelTexture, createMasonryTexture, createScreeTexture, createVoussoirTexture, loadDetailTexture } from './textures.ts';
 import { buildViaduct } from './viaductMesh.ts';
@@ -199,30 +202,63 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
     scene.add(mesh);
   }
 
-  const bodyMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.08 });
-  const glassMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 0.12, metalness: 0.35 });
-  const trainKinds: VehicleKind[] = ['locomotive', 'locomotiveWrap', 'standard', 'panorama'];
+  const liverySize = tierName === 'high' ? 1024 : 512;
+  const paint = (spec: VehicleSpec) =>
+    new MeshStandardMaterial({ map: createLiveryTexture(spec, liverySize, anisotropy), vertexColors: true, roughness: 0.42, metalness: 0.08 });
+  const glassMaterial = new MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.1,
+    metalness: 0.55,
+    envMap: createSkyReflection(),
+  });
+  const lampMaterial = new MeshBasicMaterial({ vertexColors: true, toneMapped: false });
+
+  function trainObject<T extends Mesh | InstancedMesh>(object: T, casts = true): T {
+    object.castShadow = casts;
+    object.receiveShadow = casts;
+    object.frustumCulled = false;
+    object.matrixAutoUpdate = false;
+    scene.add(object);
+
+    return object;
+  }
+
+  const locomotiveSpec = CONSIST.find((vehicle) => vehicle.kind === 'locomotive');
+  const panoramaSpec = CONSIST.find((vehicle) => vehicle.kind === 'panorama');
+  if (!locomotiveSpec || !panoramaSpec) {
+    throw new Error('viaduct: the consist has no locomotive or no panorama coach');
+  }
+
+  const locomotive = buildVehicle(locomotiveSpec);
+  const locomotiveBody = toGeometry(locomotive.body);
+  const locomotiveGlass = toGeometry(locomotive.glass);
+  const panorama = buildVehicle(panoramaSpec);
   const panoramaCount = CONSIST.filter((vehicle) => vehicle.kind === 'panorama').length;
-  const vehicleMeshes = new Map<VehicleKind, { body: Mesh | InstancedMesh; glass: Mesh | InstancedMesh }>();
-  for (const kind of trainKinds) {
-    const { body, glass } = buildVehicle(kind);
-    const instanced = kind === 'panorama';
-    const bodyObject = instanced
-      ? new InstancedMesh(toGeometry(body), bodyMaterial, panoramaCount)
-      : new Mesh(toGeometry(body), bodyMaterial);
-    const glassObject = instanced
-      ? new InstancedMesh(toGeometry(glass), glassMaterial, panoramaCount)
-      : new Mesh(toGeometry(glass), glassMaterial);
-    for (const object of [bodyObject, glassObject]) {
-      object.castShadow = true;
-      object.receiveShadow = true;
-      object.frustumCulled = false;
-      object.matrixAutoUpdate = false;
-      scene.add(object);
+  const panoramaBody = trainObject(new InstancedMesh(toGeometry(panorama.body), paint(panoramaSpec), panoramaCount));
+  const panoramaGlass = trainObject(new InstancedMesh(toGeometry(panorama.glass), glassMaterial, panoramaCount));
+
+  // For each vehicle of the consist, what has to move with it.
+  const followers: Mesh[][] = [];
+  const panoramaSlots: number[] = [];
+  let nextPanoramaSlot = 0;
+  CONSIST.forEach((vehicle, index) => {
+    const attached: Mesh[] = [];
+    if (vehicle.kind === 'locomotive') {
+      attached.push(trainObject(new Mesh(locomotiveBody, paint(vehicle))), trainObject(new Mesh(locomotiveGlass, glassMaterial)));
     }
 
-    vehicleMeshes.set(kind, { body: bodyObject, glass: glassObject });
-  }
+    // The head is always the first locomotive's front and the tail the last coach's rear.
+    if (index === 0) {
+      attached.push(trainObject(new Mesh(toGeometry(buildHeadLamps(vehicle)), lampMaterial), false));
+    }
+
+    if (index === CONSIST.length - 1) {
+      attached.push(trainObject(new Mesh(toGeometry(buildTailLamps(vehicle)), lampMaterial), false));
+    }
+
+    followers.push(attached);
+    panoramaSlots.push(vehicle.kind === 'panorama' ? nextPanoramaSlot++ : -1);
+  });
 
   const poses = createPoses();
   const vehicleMatrix = new Matrix4();
@@ -233,36 +269,24 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
   function placeTrain(time: number) {
     const state = trainStateAt(time);
     placeConsist(state.headS, state.direction, poses);
-    const panoramaIndex = { value: 0 };
-    CONSIST.forEach((vehicle, index) => {
+    CONSIST.forEach((_, index) => {
       const pose = poses[index];
       forward.set(pose.forwardX, pose.forwardY, pose.forwardZ);
       up.set(0, 1, 0).addScaledVector(forward, -forward.y).normalize();
       across.crossVectors(forward, up);
       vehicleMatrix.makeBasis(forward, up, across).setPosition(pose.x, pose.y, pose.z);
-      const parts = vehicleMeshes.get(vehicle.kind);
-      if (!parts) {
-        return;
+      for (const object of followers[index]) {
+        object.matrix.copy(vehicleMatrix);
+        object.matrixWorldNeedsUpdate = true;
       }
 
-      if (vehicle.kind === 'panorama') {
-        (parts.body as InstancedMesh).setMatrixAt(panoramaIndex.value, vehicleMatrix);
-        (parts.glass as InstancedMesh).setMatrixAt(panoramaIndex.value, vehicleMatrix);
-        panoramaIndex.value += 1;
-      } else {
-        parts.body.matrix.copy(vehicleMatrix);
-        parts.glass.matrix.copy(vehicleMatrix);
-        parts.body.matrixWorldNeedsUpdate = true;
-        parts.glass.matrixWorldNeedsUpdate = true;
+      if (panoramaSlots[index] >= 0) {
+        panoramaBody.setMatrixAt(panoramaSlots[index], vehicleMatrix);
+        panoramaGlass.setMatrixAt(panoramaSlots[index], vehicleMatrix);
       }
     });
-    for (const parts of vehicleMeshes.values()) {
-      for (const object of [parts.body, parts.glass]) {
-        if (object instanceof InstancedMesh) {
-          object.instanceMatrix.needsUpdate = true;
-        }
-      }
-    }
+    panoramaBody.instanceMatrix.needsUpdate = true;
+    panoramaGlass.instanceMatrix.needsUpdate = true;
   }
 
   const sun = new DirectionalLight(0xfff0d2, 3.1);
@@ -394,6 +418,7 @@ diffuseColor.rgb *= mix(grassSample, rockSample, vRock);`,
 
   function renderFrame() {
     placeTrain(clock);
+    windTime.value = clock;
     if (shadowStage >= 2) {
       renderer.shadowMap.autoUpdate = false;
       renderer.shadowMap.needsUpdate = frames % 2 === 0 || viewChanged;

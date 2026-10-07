@@ -6,26 +6,30 @@
 
 import { track } from './track.ts';
 
-export type VehicleKind = 'locomotive' | 'locomotiveWrap' | 'standard' | 'panorama';
+export type VehicleKind = 'locomotive' | 'panorama';
 
 export interface VehicleSpec {
   kind: VehicleKind;
+  // Over the couplers (and the gangway bellows of a coach), as published.
   length: number;
   // Distance between the two bogie pivots.
   bogieSpacing: number;
+  // The running number on the cab fronts of a locomotive.
+  number?: number;
 }
 
-const LOCOMOTIVE: VehicleSpec = { kind: 'locomotive', length: 16.9, bogieSpacing: 9.4 };
-const LOCOMOTIVE_WRAP: VehicleSpec = { kind: 'locomotiveWrap', length: 16.9, bogieSpacing: 9.4 };
-const STANDARD: VehicleSpec = { kind: 'standard', length: 16.5, bogieSpacing: 11.2 };
-const PANORAMA: VehicleSpec = { kind: 'panorama', length: 18.5, bogieSpacing: 12.6 };
+// How far the coupler (or the bellows of a coach) reaches beyond the body at each end.
+export const END_OVERHANG = 0.35;
 
-// As in the photograph: a red locomotive, a second one in an advertising wrap, a standard coach,
-// then four panorama coaches.
-export const CONSIST: VehicleSpec[] = [LOCOMOTIVE, LOCOMOTIVE_WRAP, STANDARD, PANORAMA, PANORAMA, PANORAMA, PANORAMA];
-export const COUPLING_GAP = 0.8;
-export const TRAIN_LENGTH =
-  CONSIST.reduce((total, vehicle) => total + vehicle.length, 0) + COUPLING_GAP * (CONSIST.length - 1);
+// RhB ABe 4/4 III: 16.886 m over the couplers.
+const LOCOMOTIVE_A: VehicleSpec = { kind: 'locomotive', length: 16.886, bogieSpacing: 10.2, number: 51 };
+const LOCOMOTIVE_B: VehicleSpec = { kind: 'locomotive', length: 16.886, bogieSpacing: 10.2, number: 52 };
+// RhB Bp panorama coach, rebuilt by Stadler in 2006/07: 16.45 m over the couplers.
+const PANORAMA: VehicleSpec = { kind: 'panorama', length: 16.45, bogieSpacing: 10.7 };
+
+// Two locomotives at the head, then six panorama coaches. The vehicles meet at the couplers.
+export const CONSIST: VehicleSpec[] = [LOCOMOTIVE_A, LOCOMOTIVE_B, PANORAMA, PANORAMA, PANORAMA, PANORAMA, PANORAMA, PANORAMA];
+export const TRAIN_LENGTH = CONSIST.reduce((total, vehicle) => total + vehicle.length, 0);
 
 export const SPEED = 13;
 const PAUSE_SECONDS = 4;
@@ -70,7 +74,7 @@ export function placeConsist(headS: number, direction: 1 | -1, poses: VehiclePos
     pose.forwardX = dx / length;
     pose.forwardY = dy / length;
     pose.forwardZ = dz / length;
-    offset += vehicle.length + COUPLING_GAP;
+    offset += vehicle.length;
   });
 }
 

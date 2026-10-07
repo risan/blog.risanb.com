@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { frameForAspect, projectToScreen } from './camera.ts';
 import { track } from './track.ts';
-import { CONSIST, COUPLING_GAP, createPoses, CYCLE_SECONDS, PHOTO_TIME, placeConsist, SPEED, trainStateAt } from './train.ts';
+import { CONSIST, createPoses, CYCLE_SECONDS, PHOTO_TIME, placeConsist, SPEED, TRAIN_LENGTH, trainStateAt } from './train.ts';
 
 const widest = frameForAspect(2.1);
 
@@ -12,7 +12,7 @@ function onScreen(x: number, y: number, z: number): boolean {
   return Math.abs(screenX) < 1.05 && Math.abs(screenY) < 1.05;
 }
 
-test('vehicles keep their coupling gaps along the line', () => {
+test('vehicles meet at their couplers along the line', () => {
   const poses = createPoses();
   for (const headS of [300, 330, 450, 600]) {
     placeConsist(headS, 1, poses);
@@ -20,7 +20,7 @@ test('vehicles keep their coupling gaps along the line', () => {
       const front = poses[index];
       const behind = poses[index + 1];
       const centreDistance = Math.hypot(front.x - behind.x, front.y - behind.y, front.z - behind.z);
-      const expected = (CONSIST[index].length + CONSIST[index + 1].length) / 2 + COUPLING_GAP;
+      const expected = (CONSIST[index].length + CONSIST[index + 1].length) / 2;
       assert.ok(Math.abs(centreDistance - expected) < 0.9, `gap ${index} at ${headS}: ${centreDistance} vs ${expected}`);
       assert.ok(centreDistance > (CONSIST[index].length + CONSIST[index + 1].length) / 2 - 0.5);
     }
@@ -30,13 +30,13 @@ test('vehicles keep their coupling gaps along the line', () => {
 test('the locomotive leads in both directions', () => {
   const poses = createPoses();
   placeConsist(400, 1, poses);
-  assert.ok(poses[0].x !== poses[6].x);
+  assert.ok(poses[0].x !== poses[poses.length - 1].x);
   const downLeadS = nearestS(poses[0].x, poses[0].z);
-  const downTailS = nearestS(poses[6].x, poses[6].z);
+  const downTailS = nearestS(poses[poses.length - 1].x, poses[poses.length - 1].z);
   assert.ok(downLeadS > downTailS, 'moving to higher s, the head is further along');
 
   placeConsist(400, -1, poses);
-  assert.ok(nearestS(poses[0].x, poses[0].z) < nearestS(poses[6].x, poses[6].z), 'moving back, the head is at lower s');
+  assert.ok(nearestS(poses[0].x, poses[0].z) < nearestS(poses[poses.length - 1].x, poses[poses.length - 1].z), 'moving back, the head is at lower s');
 });
 
 function nearestS(x: number, z: number): number {
@@ -93,5 +93,25 @@ test('at the photo time the head is on the viaduct and the tail on the approach'
   const state = trainStateAt(PHOTO_TIME);
   assert.equal(state.direction, 1);
   assert.ok(state.headS > track.viaduct.startS && state.headS < track.viaduct.endS);
-  assert.ok(state.headS - CONSIST.reduce((sum, vehicle) => sum + vehicle.length + COUPLING_GAP, 0) < track.viaduct.startS);
+  assert.ok(state.headS - CONSIST.reduce((sum, vehicle) => sum + vehicle.length, 0) < track.viaduct.startS);
+});
+
+test('the consist is two locomotives and six panorama coaches, as in the Bernina Express', () => {
+  assert.deepEqual(
+    CONSIST.map((vehicle) => vehicle.kind),
+    ['locomotive', 'locomotive', ...Array(6).fill('panorama')],
+  );
+  assert.deepEqual(CONSIST.slice(0, 2).map((vehicle) => vehicle.number), [51, 52]);
+});
+
+test('vehicle lengths are the published ones over the couplers', () => {
+  assert.equal(CONSIST[0].length, 16.886);
+  assert.equal(CONSIST[2].length, 16.45);
+  assert.ok(Math.abs(TRAIN_LENGTH - (2 * 16.886 + 6 * 16.45)) < 1e-9);
+});
+
+test('every bogie pair sits well inside its vehicle', () => {
+  for (const vehicle of CONSIST) {
+    assert.ok(vehicle.bogieSpacing > vehicle.length * 0.55 && vehicle.bogieSpacing < vehicle.length * 0.7);
+  }
 });

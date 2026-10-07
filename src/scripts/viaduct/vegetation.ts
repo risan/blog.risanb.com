@@ -1,6 +1,7 @@
 // Trees, bushes and rocks as instanced meshes: one draw call per kind however many there are.
 // Crowns are cut-out leaf and needle cards (see treeMesh.ts); each instance carries its own
-// colour, which gives the grove its autumn variety.
+// colour, which gives the grove its autumn variety. Trees and bushes sway in the wind (wind.ts);
+// the rocks stay put.
 
 import {
   Color,
@@ -8,8 +9,10 @@ import {
   IcosahedronGeometry,
   InstancedMesh,
   LinearSRGBColorSpace,
+  MeshDepthMaterial,
   MeshStandardMaterial,
   Object3D,
+  RGBADepthPacking,
   type Texture,
 } from 'three';
 import { toGeometry } from './geometry.ts';
@@ -27,10 +30,21 @@ import {
   CONIFER_HEIGHT,
   CONIFER_RADIUS,
 } from './treeMesh.ts';
+import { applyWind, type WindSettings } from './wind.ts';
 
 // The leaf textures are mostly mid-grey, so the instance colours are lifted to compensate.
 const LEAF_GAIN = 1.9;
 const NEEDLE_GAIN = 5.6;
+
+const BROADLEAF_HEIGHT = 12.2;
+
+const BROADLEAF_WIND: WindSettings = { height: BROADLEAF_HEIGHT, sway: 0.6, speed: 1.3, flutter: 0.08, shimmer: 0.4 };
+// Spruces are stiffer: they lean less and spring back faster.
+const CONIFER_WIND: WindSettings = { height: CONIFER_HEIGHT, sway: 0.3, speed: 1.9, flutter: 0.1, shimmer: 0.35 };
+const BUSH_WIND: WindSettings = { height: 1.2, sway: 0.08, speed: 2.4, flutter: 0.04, shimmer: 0.25 };
+// Wood bends with its crown but has no leaves to flutter.
+const BROADLEAF_WOOD_WIND: WindSettings = { ...BROADLEAF_WIND, flutter: 0, shimmer: 0 };
+const CONIFER_WOOD_WIND: WindSettings = { ...CONIFER_WIND, flutter: 0, shimmer: 0 };
 
 // Loose angular rock: a faceted ball pushed about by noise, mapped with the scree texture.
 function rockGeometry(detail: number): IcosahedronGeometry {
@@ -57,7 +71,7 @@ function colorOf([red, green, blue]: Rgb, gain = 1): Color {
 
 // A cut-out card material. The cards' normals already point where the light should treat them, so
 // the back of a card must not flip its normal the way a double-sided surface would.
-function foliageMaterial(texture: FoliageTexture): MeshStandardMaterial {
+function foliageMaterial(texture: FoliageTexture, wind: WindSettings): MeshStandardMaterial {
   const material = new MeshStandardMaterial({
     map: texture.map,
     alphaMap: texture.alphaMap,
@@ -69,7 +83,33 @@ function foliageMaterial(texture: FoliageTexture): MeshStandardMaterial {
     side: DoubleSide,
   });
   material.onBeforeCompile = (shader) => {
+    applyWind(shader, wind);
     shader.fragmentShader = shader.fragmentShader.replace('float faceDirection = gl_FrontFacing ? 1.0 : - 1.0;', 'float faceDirection = 1.0;');
+  };
+
+  return material;
+}
+
+function woodMaterial(wind: WindSettings): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({ vertexColors: true, roughness: 1 });
+  material.onBeforeCompile = (shader) => {
+    applyWind(shader, wind);
+  };
+
+  return material;
+}
+
+// The depth material three makes by itself for a cut-out card does not carry the wind, so the
+// shadows would stand still while the trees sway.
+function windDepthMaterial(source: MeshStandardMaterial, wind: WindSettings): MeshDepthMaterial {
+  const material = new MeshDepthMaterial({
+    depthPacking: RGBADepthPacking,
+    map: source.map,
+    alphaMap: source.alphaMap,
+    alphaTest: source.alphaTest,
+  });
+  material.onBeforeCompile = (shader) => {
+    applyWind(shader, wind);
   };
 
   return material;
@@ -82,16 +122,20 @@ export interface Vegetation {
 export function buildVegetation(scenery: Scenery, high: boolean, rockTexture: Texture, anisotropy: number): Vegetation {
   const dummy = new Object3D();
   const textureSize = high ? 512 : 256;
-  const leafMaterial = foliageMaterial(createLeafTexture(textureSize, anisotropy));
-  const needleMaterial = foliageMaterial(createNeedleTexture(textureSize, anisotropy));
-  const woodMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 1 });
+  const leafTexture = createLeafTexture(textureSize, anisotropy);
+  const leafMaterial = foliageMaterial(leafTexture, BROADLEAF_WIND);
+  // The bushes share the leaf texture but sway to their own settings.
+  const bushMaterial = foliageMaterial(leafTexture, BUSH_WIND);
+  const needleMaterial = foliageMaterial(createNeedleTexture(textureSize, anisotropy), CONIFER_WIND);
+  const broadleafWoodMaterial = woodMaterial(BROADLEAF_WOOD_WIND);
+  const coniferWoodMaterial = woodMaterial(CONIFER_WOOD_WIND);
   const rockMaterial = new MeshStandardMaterial({ map: rockTexture, roughness: 1, flatShading: true });
   const meshes: InstancedMesh[] = [];
 
   const broadleaves = scenery.trees.filter((tree) => !tree.conifer);
   const conifers = scenery.trees.filter((tree) => tree.conifer);
 
-  const wood = new InstancedMesh(toGeometry(buildBroadleafWood()), woodMaterial, broadleaves.length);
+  const wood = new InstancedMesh(toGeometry(buildBroadleafWood()), broadleafWoodMaterial, broadleaves.length);
   const crowns = new InstancedMesh(toGeometry(high ? buildBroadleafCrown(200) : buildBroadleafCrown(130, 1.2)), leafMaterial, broadleaves.length);
   broadleaves.forEach((tree, index) => {
     const scale = tree.radius / BROADLEAF_RADIUS;
@@ -104,7 +148,7 @@ export function buildVegetation(scenery: Scenery, high: boolean, rockTexture: Te
     crowns.setColorAt(index, colorOf(tree.color, LEAF_GAIN));
   });
 
-  const spruceTrunks = new InstancedMesh(toGeometry(buildConiferTrunk()), woodMaterial, conifers.length);
+  const spruceTrunks = new InstancedMesh(toGeometry(buildConiferTrunk()), coniferWoodMaterial, conifers.length);
   const needles = new InstancedMesh(toGeometry(high ? buildConiferCrown(16, 7, 11) : buildConiferCrown(11, 5, 8, 2)), needleMaterial, conifers.length);
   conifers.forEach((tree, index) => {
     const width = tree.radius / CONIFER_RADIUS;
@@ -117,7 +161,7 @@ export function buildVegetation(scenery: Scenery, high: boolean, rockTexture: Te
     needles.setColorAt(index, colorOf(tree.color, NEEDLE_GAIN));
   });
 
-  const bushes = new InstancedMesh(toGeometry(buildBushCrown(high ? 36 : 20)), leafMaterial, scenery.bushes.length);
+  const bushes = new InstancedMesh(toGeometry(buildBushCrown(high ? 36 : 20)), bushMaterial, scenery.bushes.length);
   scenery.bushes.forEach((bush, index) => {
     dummy.position.set(bush.x, bush.y, bush.z);
     dummy.rotation.set(0, index, 0);
@@ -138,6 +182,17 @@ export function buildVegetation(scenery: Scenery, high: boolean, rockTexture: Te
     rocks.setMatrixAt(index, dummy.matrix);
     rocks.setColorAt(index, colorOf(rock.color));
   });
+
+  const swaying: [InstancedMesh, MeshStandardMaterial, WindSettings][] = [
+    [wood, broadleafWoodMaterial, BROADLEAF_WOOD_WIND],
+    [crowns, leafMaterial, BROADLEAF_WIND],
+    [spruceTrunks, coniferWoodMaterial, CONIFER_WOOD_WIND],
+    [needles, needleMaterial, CONIFER_WIND],
+    [bushes, bushMaterial, BUSH_WIND],
+  ];
+  for (const [mesh, material, wind] of swaying) {
+    mesh.customDepthMaterial = windDepthMaterial(material, wind);
+  }
 
   for (const mesh of [wood, crowns, spruceTrunks, needles, bushes, rocks]) {
     mesh.castShadow = true;
