@@ -465,8 +465,11 @@ export function mountainCover(x: number, z: number, height: number, slope: numbe
 
   // The wood starts at the foot of the slope, where the line runs along it.
   const forest = Math.max(smoothstep(2, 14, uphill), smoothstep(8, 32, above));
+  // No wood south of the loop: that ground lies between the camera and the viaduct, and its trees
+  // would stand in front of the arches whenever the view zooms in.
+  const clearSouth = 1 - smoothstep(NEAR_BOUNDS.maxZ - 10, NEAR_BOUNDS.maxZ + 10, z);
 
-  return { forest: forest * beyond, stony };
+  return { forest: forest * beyond * clearSouth, stony };
 }
 
 // Grid lines from one edge to the other: spaced `spacing` apart over the stretch the scene showed
