@@ -33,7 +33,7 @@ import {
 import { applyWind, type WindSettings } from './wind.ts';
 
 // The leaf textures are mostly mid-grey, so the instance colours are lifted to compensate.
-const LEAF_GAIN = 1.9;
+const LEAF_GAIN = 2.2;
 const NEEDLE_GAIN = 5.6;
 
 const BROADLEAF_HEIGHT = 12.2;
